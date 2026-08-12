@@ -1,39 +1,19 @@
 <script setup lang="ts">
-import { formatReadingTime } from '~/utils/readingTime'
-
-interface PostCardItem {
-  title: string
-  slug: string
-  date: string
-  excerpt?: string
-  description?: string
-  body?: unknown
-}
+import type { PostSummary } from '~/composables/useContentCollections'
+import { formatChineseDate } from '~/utils/date'
 
 const props = defineProps<{
-  post: PostCardItem
+  post: PostSummary
 }>()
 
-const formatDate = (value: string) => {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
-
 const cardExcerpt = computed(() => props.post.excerpt || props.post.description || '')
-const readingTimeText = computed(() => formatReadingTime(props.post.body || cardExcerpt.value || ''))
 </script>
 
 <template>
   <article class="post-card">
     <div class="post-card-meta">
-      <time :datetime="post.date">{{ formatDate(post.date) }}</time>
-      <span class="reading-time">{{ readingTimeText }}</span>
+      <time :datetime="post.date">{{ formatChineseDate(post.date) }}</time>
+      <span class="reading-time">{{ post.readingTimeText }}</span>
     </div>
 
     <h2 class="post-card-title">

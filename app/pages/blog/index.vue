@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig } from '~/utils/seo'
+import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
+import { matchesContentSearch, normalizeSearchQuery } from '~/utils/contentSearch'
 
+const siteUrl = useSiteUrl()
 const route = useRoute()
 const blogTitle = seoConfig.pages.blog.title || '博客文章'
 const blogDescription = seoConfig.pages.blog.description || '这里汇总了我的科研项目记录、算法笔记、Linux 使用笔记与工程实践总结。'
 const blogKeywords = seoConfig.pages.blog.keywords?.length
   ? seoConfig.pages.blog.keywords
   : seoConfig.defaultKeywords
-const blogImage = resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage)
-const canonical = resolveAbsoluteUrl('/blog')
+const blogImage = resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage, siteUrl)
+const canonical = resolveAbsoluteUrl('/blog', siteUrl)
 
 useHead({
   title: blogTitle,
@@ -34,35 +36,20 @@ useSeoMeta({
     : {})
 })
 
-const { data: posts } = await useAsyncData('blog-posts', () => {
-  return queryCollection('posts')
-    .all()
-})
-
-const sortedPosts = computed(() => {
-  return [...(posts.value || [])]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-})
+const { data: posts } = await usePostSummaries()
 
 const normalizedSearchQuery = computed(() => {
-  const value = route.query.q
-  return typeof value === 'string' ? value.trim().toLowerCase() : ''
+  return normalizeSearchQuery(route.query.q)
 })
 
 const filteredPosts = computed(() => {
-  return sortedPosts.value.filter((post) => {
-    if (!normalizedSearchQuery.value) return true
-
-    const haystack = [
+  return (posts.value || []).filter((post) => {
+    return matchesContentSearch(normalizedSearchQuery.value, [
       post.title,
       post.description,
-      post.excerpt
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-
-    return haystack.includes(normalizedSearchQuery.value)
+      post.excerpt,
+      post.tags
+    ])
   })
 })
 </script>

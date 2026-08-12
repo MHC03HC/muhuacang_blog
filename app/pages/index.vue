@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig } from '~/utils/seo'
+import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
 
+const siteUrl = useSiteUrl()
 const homeDescription = seoConfig.pages.home.description || seoConfig.defaultDescription
 const homeKeywords = seoConfig.pages.home.keywords?.length
   ? seoConfig.pages.home.keywords
   : seoConfig.defaultKeywords
-const homeImage = resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage)
-const canonical = resolveAbsoluteUrl('/')
+const homeImage = resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage, siteUrl)
+const canonical = resolveAbsoluteUrl('/', siteUrl)
 
 useHead({
   link: canonical
@@ -31,15 +32,10 @@ useSeoMeta({
     : {})
 })
 
-const { data: posts } = await useAsyncData('home-posts', () => {
-  return queryCollection('posts')
-    .all()
-})
+const { data: posts } = await usePostSummaries()
 
 const latestPosts = computed(() => {
-  return [...(posts.value || [])]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 3)
+  return (posts.value || []).slice(0, 3)
 })
 </script>
 
@@ -59,7 +55,14 @@ const latestPosts = computed(() => {
       </div>
 
       <div class="hero-avatar" aria-hidden="true">
-        <img src="/ChatGPT%20Image%202026%E5%B9%B46%E6%9C%885%E6%97%A5%2018_37_02.png" alt="" />
+        <img
+          src="/images/avatar.webp"
+          alt=""
+          width="512"
+          height="512"
+          decoding="async"
+          fetchpriority="high"
+        >
       </div>
     </section>
 
