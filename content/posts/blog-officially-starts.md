@@ -1,5 +1,5 @@
 ---
-title: 我的个人博客正式开始
+title: 我的个人博客正式启用
 slug: blog-officially-starts
 description: 记录个人博客正式启动时的想法、定位和后续内容规划。
 excerpt: 这篇文章作为博客的开篇，简单说明为什么开始写博客，以及接下来准备记录哪些内容。

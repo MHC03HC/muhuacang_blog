@@ -33,7 +33,7 @@ const submitSearch = () => {
   }
 
   router.push({
-    path: '/blog',
+    path: q ? '/search' : '/blog',
     query: nextQuery
   })
 }
@@ -58,7 +58,7 @@ const submitSearch = () => {
             class="site-search-input"
             placeholder="搜索"
             autocomplete="off"
-            aria-label="搜索博客文章"
+            aria-label="搜索博客和 Wiki"
           >
         </form>
 

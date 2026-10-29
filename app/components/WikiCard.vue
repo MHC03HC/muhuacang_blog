@@ -1,31 +1,16 @@
 <script setup lang="ts">
-interface WikiCardItem {
-  title: string
-  slug: string
-  description: string
-  updated: string
-}
+import type { WikiSummary } from '~/composables/useContentCollections'
+import { formatChineseDate } from '~/utils/date'
 
-const props = defineProps<{
-  item: WikiCardItem
+defineProps<{
+  item: WikiSummary
 }>()
-
-const formatDate = (value: string) => {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
 </script>
 
 <template>
   <article class="post-card">
     <div class="post-card-meta">
-      <time :datetime="item.updated">{{ formatDate(item.updated) }}</time>
+      <time :datetime="item.updated">{{ formatChineseDate(item.updated) }}</time>
     </div>
 
     <h2 class="post-card-title">

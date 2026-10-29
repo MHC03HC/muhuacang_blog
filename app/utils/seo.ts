@@ -1,4 +1,4 @@
-const siteUrl = ''
+import { useRuntimeConfig } from '#app'
 
 export const seoConfig = {
   siteName: '阿木木的技术笔记',
@@ -6,7 +6,6 @@ export const seoConfig = {
   subtitle: '个人技术博客',
   author: '阿木木',
   lang: 'zh-CN',
-  siteUrl,
   defaultTitle: '阿木木的技术笔记',
   defaultDescription: '记录科研项目、算法学习、Linux 折腾和工程实践的个人技术博客。',
   defaultKeywords: ['MoE', '强化学习', '点云处理', '具身智能', 'Linux', 'Fedora', '科研笔记'],
@@ -39,14 +38,19 @@ export const joinKeywords = (keywords?: string[]) => {
   return (keywords || []).filter(Boolean).join(', ')
 }
 
-export const resolveAbsoluteUrl = (path = '/') => {
-  if (!seoConfig.siteUrl) return undefined
+export const useSiteUrl = () => {
+  const runtimeConfig = useRuntimeConfig()
+  return String(runtimeConfig.public.siteUrl || '').trim()
+}
 
-  const base = seoConfig.siteUrl.endsWith('/') ? seoConfig.siteUrl : `${seoConfig.siteUrl}/`
+export const resolveAbsoluteUrl = (path = '/', siteUrl = '') => {
+  if (!siteUrl) return undefined
+
+  const base = siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`
   return new URL(path.replace(/^\//, ''), base).toString()
 }
 
-export const resolveImageUrl = (value?: string) => {
+export const resolveImageUrl = (value?: string, siteUrl = '') => {
   if (!value) return undefined
 
   const normalized = value.trim()
@@ -55,12 +59,12 @@ export const resolveImageUrl = (value?: string) => {
   if (/^https?:\/\//i.test(normalized)) return normalized
 
   if (normalized.startsWith('/')) {
-    return resolveAbsoluteUrl(normalized) || normalized
+    return resolveAbsoluteUrl(normalized, siteUrl) || normalized
   }
 
   if (/\.(png|jpe?g|webp|svg|ico)$/i.test(normalized)) {
     const assetPath = `/${normalized.replace(/^\/+/, '')}`
-    return resolveAbsoluteUrl(assetPath) || assetPath
+    return resolveAbsoluteUrl(assetPath, siteUrl) || assetPath
   }
 
   return undefined

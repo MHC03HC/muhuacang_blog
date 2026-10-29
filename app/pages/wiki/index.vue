@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig } from '~/utils/seo'
+import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
+import { matchesContentSearch } from '~/utils/contentSearch'
 
+const siteUrl = useSiteUrl()
 const searchQuery = ref('')
 const wikiTitle = 'Wiki'
 const wikiDescription = '这里整理我在工程学习、科研项目和技术实践中反复用到的知识点。'
 const wikiKeywords = ['Wiki', '知识库', '工程学习', '科研项目', '技术实践']
-const wikiImage = resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage)
-const canonical = resolveAbsoluteUrl('/wiki')
+const wikiImage = resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage, siteUrl)
+const canonical = resolveAbsoluteUrl('/wiki', siteUrl)
 
-const { data: wikiEntries } = await useAsyncData('wiki-entries', () => {
-  return queryCollection('wiki').all()
-})
+const { data: wikiEntries } = await useWikiSummaries()
 
 useHead({
   title: wikiTitle,
@@ -36,26 +36,12 @@ useSeoMeta({
     : {})
 })
 
-const sortedWikiEntries = computed(() => {
-  return [...(wikiEntries.value || [])]
-    .sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime())
-})
-
 const filteredWikiEntries = computed(() => {
-  const keyword = searchQuery.value.trim().toLowerCase()
-
-  return sortedWikiEntries.value.filter((item) => {
-    if (!keyword) return true
-
-    const haystack = [
+  return (wikiEntries.value || []).filter((item) => {
+    return matchesContentSearch(searchQuery.value, [
       item.title,
       item.description
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-
-    return haystack.includes(keyword)
+    ])
   })
 })
 
@@ -80,7 +66,7 @@ const clearFilters = () => {
         <p v-if="searchQuery">
           当前结果：{{ filteredWikiEntries.length }} 个条目
         </p>
-        <p v-else>当前共 {{ sortedWikiEntries.length }} 个 Wiki 条目</p>
+        <p v-else>当前共 {{ wikiEntries?.length || 0 }} 个 Wiki 条目</p>
       </div>
 
       <div class="wiki-filter-stack">
