@@ -1,8 +1,21 @@
 import { defineContentConfig, defineCollection, z } from '@nuxt/content'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式应为 YYYY-MM-DD')
 
 export default defineContentConfig({
+  highlight: {
+    theme: {
+      default: 'github-dark',
+      dark: 'github-dark',
+      light: 'github-light'
+    }
+  },
+  markdown: {
+    remarkPlugins: { 'remark-math': remarkMath },
+    rehypePlugins: { 'rehype-katex': rehypeKatex }
+  },
   collections: {
     posts: defineCollection({
       type: 'page',

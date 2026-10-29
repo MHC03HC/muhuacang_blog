@@ -632,18 +632,118 @@ a {
 
 .article-body {
   font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--body-copy);
   min-width: 0;
 }
 
 .article-body :where(h2, h3, h4) {
-  margin-top: 1.8rem;
-  line-height: 1.25;
+  line-height: 1.3;
   scroll-margin-top: 96px;
 }
 
-.article-body p,
+.article-body h2 {
+  margin-top: 2.2rem;
+  padding-left: 0.8rem;
+  border-left: 4px solid var(--accent);
+  font-size: 1.5rem;
+}
+
+.article-body h3 {
+  margin-top: 1.8rem;
+  font-size: 1.25rem;
+}
+
+.article-body h4 {
+  margin-top: 1.5rem;
+  font-size: 1.08rem;
+  color: var(--text-soft);
+}
+
+.article-body p {
+  margin: 0 0 1.1em;
+  text-align: justify;
+  text-justify: inter-ideograph;
+}
+
 .article-body li {
+  margin: 0.4rem 0;
+  line-height: 1.75;
   color: var(--body-copy);
+}
+
+.article-body ul,
+.article-body ol {
+  margin: 0.9rem 0;
+  padding-left: 1.5rem;
+}
+
+.article-body li::marker {
+  color: var(--accent);
+}
+
+.article-body ul ul,
+.article-body ol ol,
+.article-body ul ol,
+.article-body ol ul {
+  margin: 0.3rem 0;
+}
+
+.article-body blockquote {
+  margin: 1.5rem 0;
+  padding: 0.75rem 1.25rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+  background: var(--panel-soft);
+  color: var(--text-soft);
+}
+
+.article-body blockquote p {
+  margin: 0.4rem 0;
+  color: inherit;
+}
+
+.article-body table {
+  display: block;
+  width: 100%;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.article-body th,
+.article-body td {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.article-body thead th {
+  background: var(--panel-soft);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.article-body tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--panel-soft) 50%, transparent);
+}
+
+.article-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.article-body hr {
+  margin: 2rem 0;
+  border: 0;
+  height: 1px;
+  background: var(--line);
 }
 
 .article-body pre {
@@ -737,10 +837,8 @@ a {
 }
 
 .article-body pre[class*='language-'],
-.article-body .shiki,
-.article-body .shiki code {
+.article-body .shiki {
   background: var(--code-bg) !important;
-  color: var(--code-text) !important;
 }
 
 .article-body .shiki,
