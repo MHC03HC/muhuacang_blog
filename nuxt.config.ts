@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   css: ['~/assets/css/theme.css', '~/assets/css/app.css'],
   runtimeConfig: {
     public: {
-      siteUrl: ''
+      siteUrl: 'https://www.muhuacang.cn'
     }
   }
 })
