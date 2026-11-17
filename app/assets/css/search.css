@@ -1,0 +1,37 @@
+/* Full-text results only; ordinary article and Wiki cards keep their layout. */
+.search-help {
+  margin: -0.5rem 0 1.5rem;
+  color: var(--text-soft);
+  font-size: 0.875rem;
+}
+.search-hits {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+.search-hit-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--link);
+  text-decoration: none;
+  font-weight: 600;
+  text-underline-offset: 0.2em;
+}
+.search-hit-heading:hover { text-decoration: underline; }
+.search-hit-action { font-size: 0.8125rem; font-weight: 400; }
+.search-hit-context {
+  margin: 0.4rem 0 0;
+  color: var(--text-soft);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.search-page mark {
+  padding: 0.05em 0.1em;
+  border-radius: 3px;
+  background: var(--panel-soft-strong);
+  color: var(--text);
+  font-weight: 700;
+}

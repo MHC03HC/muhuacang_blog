@@ -188,8 +188,8 @@
 }
 
 .search-page-form .site-search-input {
-  flex: 1 1 auto;
-  width: 100%;
+  flex: 1 1 0;
+  width: auto;
   max-width: 480px;
 }
 
@@ -326,4 +326,9 @@
   .post-card, .feature-card, .info-card, .article-header { padding: 1.1rem; }
   .search-page-form { flex-wrap: wrap; }
   .search-page-form .site-search-input { flex-basis: 100%; }
+}
+
+.search-page-form > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
