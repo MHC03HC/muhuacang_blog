@@ -1,5 +1,3 @@
-import { formatReadingTime } from '~/utils/readingTime'
-
 export type PostSummary = {
   title: string
   slug: string
@@ -8,7 +6,6 @@ export type PostSummary = {
   date: string
   author: string
   tags: string[]
-  readingTimeText: string
 }
 
 export type WikiSummary = {
@@ -27,7 +24,9 @@ const timestamp = (value: string) => {
 
 export const usePostSummaries = () => {
   return useAsyncData('post-summaries', async (): Promise<PostSummary[]> => {
-    const posts = await queryCollection('posts').all()
+    const posts = await queryCollection('posts')
+      .select('title', 'slug', 'description', 'excerpt', 'date', 'author', 'tags')
+      .all()
 
     return posts
       .map((post) => ({
@@ -37,8 +36,7 @@ export const usePostSummaries = () => {
         excerpt: post.excerpt,
         date: post.date,
         author: post.author,
-        tags: post.tags || [],
-        readingTimeText: formatReadingTime(post.body || post.description)
+        tags: post.tags || []
       }))
       .sort((a, b) => timestamp(b.date) - timestamp(a.date))
   })

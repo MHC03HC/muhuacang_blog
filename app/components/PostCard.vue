@@ -13,7 +13,6 @@ const cardExcerpt = computed(() => props.post.excerpt || props.post.description 
   <article class="post-card">
     <div class="post-card-meta">
       <time :datetime="post.date">{{ formatChineseDate(post.date) }}</time>
-      <span class="reading-time">{{ post.readingTimeText }}</span>
     </div>
 
     <h2 class="post-card-title">

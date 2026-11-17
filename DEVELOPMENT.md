@@ -96,7 +96,7 @@ muhuacang_blog/
 │   ├── components/              # 页头、页脚、卡片等组件
 │   ├── composables/             # 主题、内容查询和正文增强逻辑
 │   ├── pages/                   # Nuxt 页面与路由
-│   ├── utils/                   # 搜索、日期、阅读时间和 SEO 工具
+│   ├── utils/                   # 搜索、日期和 SEO 工具
 │   └── app.vue                  # 应用入口
 ├── content/
 │   ├── posts/                   # 博客 Markdown 文章
@@ -223,7 +223,7 @@ related:
 - 深色模式状态：`app/composables/useTheme.ts`
 - 主题变量：`app/assets/css/theme.css`
 - 全局布局和代码块样式：`app/assets/css/app.css`
-- 阅读时间算法：`app/utils/readingTime.ts`
+- 文章目录与代码复制：`app/composables/useContentEnhancements.ts`
 - SEO 默认信息：`app/utils/seo.ts`
 - 404 页面：`error.vue` 和 `public/404.html`
 - 静态产物检查：`scripts/check-static-output.mjs`

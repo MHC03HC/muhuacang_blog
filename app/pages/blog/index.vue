@@ -57,7 +57,6 @@ const filteredPosts = computed(() => {
 <template>
   <div class="site-container page-shell">
     <header class="page-header">
-      <p class="section-kicker">博客</p>
       <h1>博客文章</h1>
     </header>
 

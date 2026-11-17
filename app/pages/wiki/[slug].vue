@@ -96,7 +96,7 @@ const {
 } = useContentEnhancements(
   articleBodyRef,
   () => entry.value?.slug,
-  () => entry.value?.body?.toc?.links
+  () => entry.value?.body
 )
 </script>
 
@@ -113,7 +113,7 @@ const {
       <p class="article-description">{{ entry.description }}</p>
     </header>
 
-    <div class="article-layout">
+    <div class="article-layout" :class="{ 'has-toc': shouldShowToc }">
       <ArticleToc
         v-if="shouldShowToc"
         :items="tocItems"

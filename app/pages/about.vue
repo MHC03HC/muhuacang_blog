@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { profile } from '~/utils/profile'
 import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
 
 const siteUrl = useSiteUrl()
@@ -38,7 +39,6 @@ useSeoMeta({
 <template>
   <div class="site-container page-shell">
     <header class="page-header">
-      <p class="section-kicker">关于</p>
       <h1>关于我</h1>
       <p>
         你好，我是阿木木，目前主要关注工程控制、智能算法和科研项目实践。
@@ -51,6 +51,14 @@ useSeoMeta({
         我希望通过这个博客，把平时零散的学习内容整理成系统笔记，也方便以后回顾自己的成长路线。
       </p>
     </header>
+
+    <section class="profile-card">
+      <div class="profile-intro">
+        <h2>{{ profile.name }}</h2>
+        <p class="profile-tagline">{{ profile.tagline }}</p>
+        <ContactList />
+      </div>
+    </section>
 
     <section class="about-grid">
       <article class="info-card">

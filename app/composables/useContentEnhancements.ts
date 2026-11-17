@@ -3,33 +3,43 @@ import type { Ref } from 'vue'
 export type ContentTocItem = {
   id: string
   text: string
-  level: 'h2' | 'h3'
-}
-
-type ParsedTocItem = {
-  id: string
-  text: string
   depth: number
-  children?: ParsedTocItem[]
 }
 
-const flattenTocItems = (items: ParsedTocItem[] = []): ContentTocItem[] => {
-  return items.flatMap((item) => [
-    {
-      id: item.id,
-      text: item.text,
-      level: item.depth === 3 ? 'h3' as const : 'h2' as const
-    },
-    ...flattenTocItems(item.children || [])
-  ])
+// Nuxt Content stores rendered headings in its compact Markdown AST.
+// Read the actual h1–h6 hierarchy so imported notes can retain chapter headings.
+const collectTocItems = (body: unknown): ContentTocItem[] => {
+  const items: Array<{ id: string; text: string; depth: number }> = []
+  const textOf = (node: unknown): string => {
+    if (typeof node === 'string') return node
+    if (!Array.isArray(node)) return ''
+    return node.slice(2).map(textOf).join('')
+  }
+  const visit = (node: unknown) => {
+    if (!Array.isArray(node)) return
+    const [tag, props] = node
+    if (typeof tag === 'string' && /^h[1-6]$/.test(tag) && props?.id) {
+      items.push({ id: String(props.id), text: textOf(node), depth: Number(tag[1]) })
+      return
+    }
+    node.forEach(visit)
+  }
+  if (body && typeof body === 'object' && 'value' in body) {
+    visit(body.value)
+  }
+  return items.map((item) => ({
+    id: item.id,
+    text: item.text,
+    depth: item.depth
+  }))
 }
 
 export const useContentEnhancements = (
   contentRef: Ref<HTMLElement | null>,
   contentKey: () => unknown,
-  tocSource: () => ParsedTocItem[] | undefined
+  bodySource: () => unknown
 ) => {
-  const tocItems = ref<ContentTocItem[]>(flattenTocItems(tocSource()))
+  const tocItems = ref<ContentTocItem[]>(collectTocItems(bodySource()))
   const activeHeadingId = ref(tocItems.value[0]?.id || '')
   const shouldShowToc = computed(() => tocItems.value.length >= 2)
 
@@ -57,7 +67,7 @@ export const useContentEnhancements = (
 
     if (!import.meta.client || tocItems.value.length < 2) return
 
-    const headings = contentRef.value?.querySelectorAll<HTMLElement>('h2[id], h3[id]')
+    const headings = contentRef.value?.querySelectorAll<HTMLElement>('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]')
     if (!headings?.length) return
 
     headingObserver = new IntersectionObserver(
@@ -80,7 +90,7 @@ export const useContentEnhancements = (
   }
 
   const syncToc = () => {
-    tocItems.value = flattenTocItems(tocSource())
+    tocItems.value = collectTocItems(bodySource())
     activeHeadingId.value = tocItems.value[0]?.id || ''
   }
 
@@ -91,7 +101,7 @@ export const useContentEnhancements = (
     if (!target) return
 
     target.scrollIntoView({
-      behavior: 'smooth',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
       block: 'start'
     })
     activeHeadingId.value = id

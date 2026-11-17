@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { formatReadingTime } from '~/utils/readingTime'
 import { formatChineseDate } from '~/utils/date'
 import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
 
@@ -42,8 +41,6 @@ const articleImage = computed(() => {
 const articleCanonical = computed(() => {
   return resolveAbsoluteUrl(`/blog/${slug.value}`, siteUrl)
 })
-
-const readingTimeText = computed(() => formatReadingTime(post.value?.body || ''))
 
 const currentPostIndex = computed(() => {
   return (adjacentPosts.value || []).findIndex((item) => item.slug === post.value?.slug)
@@ -115,7 +112,7 @@ const {
 } = useContentEnhancements(
   articleBodyRef,
   () => post.value?.slug,
-  () => post.value?.body?.toc?.links
+  () => post.value?.body
 )
 </script>
 
@@ -129,12 +126,11 @@ const {
       <div class="article-meta">
         <time :datetime="post.date">{{ formatChineseDate(post.date) }}</time>
         <span>{{ post.author }}</span>
-        <span class="reading-time">{{ readingTimeText }}</span>
       </div>
       <p class="article-description">{{ post.description }}</p>
     </header>
 
-    <div class="article-layout">
+    <div class="article-layout" :class="{ 'has-toc': shouldShowToc }">
       <ArticleToc
         v-if="shouldShowToc"
         :items="tocItems"

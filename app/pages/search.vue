@@ -2,7 +2,24 @@
 import { matchesContentSearch, normalizeSearchQuery } from '~/utils/contentSearch'
 
 const route = useRoute()
+const router = useRouter()
 const searchQuery = computed(() => normalizeSearchQuery(route.query.q))
+const searchInput = ref(normalizeSearchQuery(route.query.q))
+
+watch(
+  () => route.query.q,
+  (value) => {
+    searchInput.value = normalizeSearchQuery(value)
+  }
+)
+
+const submitSearch = () => {
+  const q = searchInput.value.trim()
+  router.push({
+    path: '/search',
+    query: q ? { q } : {}
+  })
+}
 
 const { data: posts } = await usePostSummaries()
 const { data: wikiEntries } = await useWikiSummaries()
@@ -50,11 +67,21 @@ useSeoMeta({
 <template>
   <div class="site-container page-shell">
     <header class="page-header">
-      <p class="section-kicker">搜索</p>
       <h1>搜索结果</h1>
       <p v-if="searchQuery">“{{ searchQuery }}”共找到 {{ resultCount }} 项内容。</p>
-      <p v-else>请在顶部搜索框中输入关键词。</p>
+      <p v-else>输入关键词，搜索博客文章和 Wiki 条目。</p>
     </header>
+
+    <form class="search-page-form" role="search" @submit.prevent="submitSearch">
+      <input
+        v-model="searchInput"
+        type="search"
+        class="site-search-input"
+        placeholder="搜索文章和 Wiki 条目"
+        autocomplete="off"
+        aria-label="搜索博客和 Wiki"
+      >
+    </form>
 
     <section v-if="filteredPosts.length" class="home-section">
       <div class="section-head">

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
 const router = useRouter()
-const headerSearchQuery = ref('')
 const { themeIcon, themeLabel, toggleTheme } = useTheme()
 
 const navItems = [
@@ -16,26 +15,8 @@ const isActive = (to: string) => {
   return route.path === to || route.path.startsWith(`${to}/`)
 }
 
-watch(
-  () => route.query.q,
-  (value) => {
-    headerSearchQuery.value = typeof value === 'string' ? value : ''
-  },
-  { immediate: true }
-)
-
-const submitSearch = () => {
-  const q = headerSearchQuery.value.trim()
-  const nextQuery: Record<string, string> = {}
-
-  if (q) {
-    nextQuery.q = q
-  }
-
-  router.push({
-    path: q ? '/search' : '/blog',
-    query: nextQuery
-  })
+const goSearch = () => {
+  router.push('/search')
 }
 </script>
 
@@ -50,17 +31,31 @@ const submitSearch = () => {
         </span>
       </NuxtLink>
 
-      <div class="site-tools">
-        <form class="site-search" role="search" @submit.prevent="submitSearch">
-          <input
-            v-model="headerSearchQuery"
-            type="search"
-            class="site-search-input"
-            placeholder="搜索"
-            autocomplete="off"
-            aria-label="搜索博客和 Wiki"
+      <div class="site-header-actions">
+        <nav class="site-nav" aria-label="主导航">
+          <NuxtLink
+            v-for="item in navItems"
+            :key="item.to"
+            :to="item.to"
+            class="site-nav-link"
+            :class="{ 'is-active': isActive(item.to) }"
           >
-        </form>
+            {{ item.label }}
+          </NuxtLink>
+        </nav>
+
+        <button
+          type="button"
+          class="theme-toggle"
+          aria-label="搜索"
+          title="搜索"
+          @click="goSearch"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.8-3.8" />
+          </svg>
+        </button>
 
         <button
           type="button"
@@ -72,18 +67,6 @@ const submitSearch = () => {
           {{ themeIcon }}
         </button>
       </div>
-
-      <nav class="site-nav" aria-label="主导航">
-        <NuxtLink
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
-          class="site-nav-link"
-          :class="{ 'is-active': isActive(item.to) }"
-        >
-          {{ item.label }}
-        </NuxtLink>
-      </nav>
     </div>
   </header>
 </template>
