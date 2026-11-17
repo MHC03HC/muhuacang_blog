@@ -3,9 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>页面走丢了 - 阿木木的技术笔记</title>
+  <title>页面走丢了 - 阿木木的技术博客</title>
   <meta name="description" content="你访问的页面不存在，可能是链接错误或文章已移动。">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('amumu-theme');
+        document.documentElement.dataset.theme = stored === 'light' || stored === 'dark'
+          ? stored : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
   <style>
     :root {
       color-scheme: light dark;
@@ -16,9 +25,10 @@
       --muted: #5e7094;
       --primary: #2f6df6;
       --primary-strong: #2156cc;
+      --primary-contrast: #fff;
     }
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme]) {
         --bg: #09111f;
         --panel: rgba(12, 20, 37, .92);
         --border: rgba(96, 118, 160, .28);
@@ -26,8 +36,21 @@
         --muted: #a8b5d0;
         --primary: #7ba2ff;
         --primary-strong: #a9c1ff;
+        --primary-contrast: #08101d;
       }
     }
+    :root[data-theme='dark'] {
+        color-scheme: dark;
+        --bg: #09111f;
+        --panel: rgba(12, 20, 37, .92);
+        --border: rgba(96, 118, 160, .28);
+        --text: #edf3ff;
+        --muted: #a8b5d0;
+        --primary: #7ba2ff;
+        --primary-strong: #a9c1ff;
+        --primary-contrast: #08101d;
+      }
+    :root[data-theme='light'] { color-scheme: light; }
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -52,7 +75,7 @@
     }
     .kicker {
       margin: 0 0 12px;
-      color: #f97f7f;
+      color: var(--primary);
       font-size: 14px;
       font-weight: 700;
       letter-spacing: .04em;
@@ -86,7 +109,7 @@
     }
     .btn:hover { transform: translateY(-1px); }
     .btn-primary {
-      color: #fff;
+      color: var(--primary-contrast);
       background: var(--primary);
     }
     .btn-primary:hover { background: var(--primary-strong); }
@@ -94,6 +117,10 @@
       color: var(--text);
       background: rgba(148, 163, 184, .12);
       border: 1px solid var(--border);
+    }
+    a:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
     }
   </style>
 </head>

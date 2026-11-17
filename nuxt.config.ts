@@ -6,6 +6,17 @@ export default defineNuxtConfig({
   content: {
     renderer: {
       anchorLinks: false
+    },
+    build: {
+      markdown: {
+        toc: { depth: 5, searchDepth: 6 },
+        remarkPlugins: { 'remark-math': {} },
+        rehypePlugins: { 'rehype-katex': {} },
+        highlight: {
+          theme: { default: 'github-light', dark: 'github-dark' },
+          langs: ['js', 'jsx', 'json', 'ts', 'tsx', 'vue', 'css', 'html', 'bash', 'shell', 'md', 'mdc', 'yaml', 'cpp', 'c', 'python']
+        }
+      }
     }
   },
   css: [

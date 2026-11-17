@@ -22,8 +22,9 @@ const statusCode = computed(() => props.error?.statusCode ?? 404)
 
 <template>
   <div class="site-shell">
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
     <SiteHeader />
-    <main class="site-main">
+    <main id="main-content" class="site-main" tabindex="-1">
       <section class="site-container error-shell">
         <div class="error-card">
           <p class="section-kicker">{{ statusCode }}</p>

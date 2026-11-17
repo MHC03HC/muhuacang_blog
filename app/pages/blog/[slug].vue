@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { formatChineseDate } from '~/utils/date'
-import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
+import { seoConfig } from '~/utils/seo'
 
 const route = useRoute()
-const siteUrl = useSiteUrl()
 const slug = computed(() => String(route.params.slug || ''))
-const articleBodyRef = ref<HTMLElement | null>(null)
 
 const { data: post } = await useAsyncData(
   () => `post-${slug.value}`,
@@ -34,14 +32,6 @@ const articleKeywords = computed(() => {
   return post.value?.tags?.length ? post.value.tags : seoConfig.defaultKeywords
 })
 
-const articleImage = computed(() => {
-  return resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage, siteUrl)
-})
-
-const articleCanonical = computed(() => {
-  return resolveAbsoluteUrl(`/blog/${slug.value}`, siteUrl)
-})
-
 const currentPostIndex = computed(() => {
   return (adjacentPosts.value || []).findIndex((item) => item.slug === post.value?.slug)
 })
@@ -58,62 +48,12 @@ const nextPost = computed(() => {
   return adjacentPosts.value?.[index + 1] || null
 })
 
-useHead(() => ({
-  title: post.value?.title || '文章',
-  meta: [
-    {
-      name: 'description',
-      content: articleDescription.value
-    },
-    {
-      name: 'keywords',
-      content: joinKeywords(articleKeywords.value)
-    },
-    {
-      property: 'og:type',
-      content: 'article'
-    },
-    {
-      property: 'og:title',
-      content: post.value?.title || '文章'
-    },
-    {
-      property: 'og:description',
-      content: articleDescription.value
-    },
-    {
-      name: 'twitter:card',
-      content: articleImage.value ? 'summary_large_image' : 'summary'
-    },
-    {
-      name: 'twitter:title',
-      content: post.value?.title || '文章'
-    },
-    {
-      name: 'twitter:description',
-      content: articleDescription.value
-    }
-  ].concat(articleImage.value
-    ? [
-        { property: 'og:image', content: articleImage.value },
-        { name: 'twitter:image', content: articleImage.value }
-      ]
-    : []),
-  link: articleCanonical.value
-    ? [{ rel: 'canonical', href: articleCanonical.value }]
-    : []
-}))
-
-const {
-  tocItems,
-  activeHeadingId,
-  shouldShowToc,
-  scrollToHeading
-} = useContentEnhancements(
-  articleBodyRef,
-  () => post.value?.slug,
-  () => post.value?.body
-)
+useArticleSeo({
+  title: () => post.value?.title || '文章',
+  description: () => articleDescription.value,
+  keywords: () => articleKeywords.value,
+  path: () => `/blog/${slug.value}`
+})
 </script>
 
 <template>
@@ -130,18 +70,7 @@ const {
       <p class="article-description">{{ post.description }}</p>
     </header>
 
-    <div class="article-layout" :class="{ 'has-toc': shouldShowToc }">
-      <ArticleToc
-        v-if="shouldShowToc"
-        :items="tocItems"
-        :active-heading-id="activeHeadingId"
-        @navigate="scrollToHeading"
-      />
-
-      <div ref="articleBodyRef" class="article-body">
-        <ContentRenderer :value="post" />
-      </div>
-    </div>
+    <ArticleContent :value="post" />
 
     <section class="article-pagination">
       <NuxtLink v-if="previousPost" :to="`/blog/${previousPost.slug}`" class="article-pagination-card is-prev">

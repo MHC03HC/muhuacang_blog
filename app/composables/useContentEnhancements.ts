@@ -1,38 +1,6 @@
 import type { Ref } from 'vue'
 
-export type ContentTocItem = {
-  id: string
-  text: string
-  depth: number
-}
-
-// Nuxt Content stores rendered headings in its compact Markdown AST.
-// Read the actual h1–h6 hierarchy so imported notes can retain chapter headings.
-const collectTocItems = (body: unknown): ContentTocItem[] => {
-  const items: Array<{ id: string; text: string; depth: number }> = []
-  const textOf = (node: unknown): string => {
-    if (typeof node === 'string') return node
-    if (!Array.isArray(node)) return ''
-    return node.slice(2).map(textOf).join('')
-  }
-  const visit = (node: unknown) => {
-    if (!Array.isArray(node)) return
-    const [tag, props] = node
-    if (typeof tag === 'string' && /^h[1-6]$/.test(tag) && props?.id) {
-      items.push({ id: String(props.id), text: textOf(node), depth: Number(tag[1]) })
-      return
-    }
-    node.forEach(visit)
-  }
-  if (body && typeof body === 'object' && 'value' in body) {
-    visit(body.value)
-  }
-  return items.map((item) => ({
-    id: item.id,
-    text: item.text,
-    depth: item.depth
-  }))
-}
+import { collectTocItems, type ContentTocItem } from '~/utils/contentToc'
 
 export const useContentEnhancements = (
   contentRef: Ref<HTMLElement | null>,
@@ -43,50 +11,55 @@ export const useContentEnhancements = (
   const activeHeadingId = ref(tocItems.value[0]?.id || '')
   const shouldShowToc = computed(() => tocItems.value.length >= 2)
 
-  let headingObserver: IntersectionObserver | null = null
-  let codeCopyResetTimers: number[] = []
+  let headingCleanup: (() => void) | null = null
+  let scrollFrame = 0
+  let disposed = false
   let codeBlockCleanupCallbacks: Array<() => void> = []
 
-  const disconnectHeadingObserver = () => {
-    headingObserver?.disconnect()
-    headingObserver = null
+  const disconnectHeadings = () => {
+    headingCleanup?.()
+    headingCleanup = null
+    if (scrollFrame) cancelAnimationFrame(scrollFrame)
+    scrollFrame = 0
   }
 
   const cleanupCodeBlocks = () => {
     codeBlockCleanupCallbacks.forEach((callback) => callback())
     codeBlockCleanupCallbacks = []
 
-    if (import.meta.client) {
-      codeCopyResetTimers.forEach((timer) => window.clearTimeout(timer))
-    }
-    codeCopyResetTimers = []
   }
 
-  const observeHeadings = () => {
-    disconnectHeadingObserver()
+  const trackHeadings = () => {
+    disconnectHeadings()
 
     if (!import.meta.client || tocItems.value.length < 2) return
 
     const headings = contentRef.value?.querySelectorAll<HTMLElement>('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]')
     if (!headings?.length) return
 
-    headingObserver = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-
-        if (visibleEntries.length) {
-          activeHeadingId.value = (visibleEntries[0].target as HTMLElement).id
-        }
-      },
-      {
-        rootMargin: '-18% 0px -68% 0px',
-        threshold: [0, 1]
+    // Recompute from all headings, including those above the viewport. This stays
+    // correct through long code blocks, fast scrolls and scrolling backwards.
+    const update = () => {
+      scrollFrame = 0
+      const offset = (document.querySelector('.site-header')?.getBoundingClientRect().bottom || 0) + 24
+      contentRef.value?.style.setProperty('--heading-offset', `${offset}px`)
+      let current = headings[0]!.id
+      for (const heading of headings) {
+        if (heading.getBoundingClientRect().top <= offset + 1) current = heading.id
+        else break
       }
-    )
-
-    headings.forEach((heading) => headingObserver?.observe(heading))
+      activeHeadingId.value = current
+    }
+    const schedule = () => {
+      if (!scrollFrame) scrollFrame = requestAnimationFrame(update)
+    }
+    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule)
+    update()
+    headingCleanup = () => {
+      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+    }
   }
 
   const syncToc = () => {
@@ -100,6 +73,11 @@ export const useContentEnhancements = (
     const target = document.getElementById(id)
     if (!target) return
 
+    const offset = (document.querySelector('.site-header')?.getBoundingClientRect().bottom || 0) + 24
+    target.style.scrollMarginTop = `${offset}px`
+    target.setAttribute('tabindex', '-1')
+    target.focus({ preventScroll: true })
+    window.history.replaceState(window.history.state, '', `#${encodeURIComponent(id)}`)
     target.scrollIntoView({
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
       block: 'start'
@@ -111,6 +89,7 @@ export const useContentEnhancements = (
     if (!import.meta.client) return
 
     await nextTick()
+    if (disposed) return
     cleanupCodeBlocks()
 
     const preElements = contentRef.value?.querySelectorAll<HTMLPreElement>('pre') || []
@@ -135,50 +114,68 @@ export const useContentEnhancements = (
         wrapper.appendChild(button)
       }
 
+      button.setAttribute('aria-live', 'polite')
       button.textContent = '复制代码'
       button.classList.remove('is-copied')
 
+      let resetTimer: number | undefined
+      const reset = () => {
+        if (!button) return
+        button.textContent = '复制代码'
+        button.classList.remove('is-copied')
+      }
       const handleCopy = async () => {
         const codeText = pre.querySelector('code')?.textContent || pre.textContent || ''
         if (!codeText.trim() || !button) return
-
+        window.clearTimeout(resetTimer)
         try {
           await navigator.clipboard.writeText(codeText)
+          if (disposed) return
           button.textContent = '已复制'
           button.classList.add('is-copied')
-
-          const timer = window.setTimeout(() => {
-            if (!button) return
-            button.textContent = '复制代码'
-            button.classList.remove('is-copied')
-          }, 1600)
-          codeCopyResetTimers.push(timer)
         } catch {
-          button.textContent = '复制失败'
-          const timer = window.setTimeout(() => {
-            if (button) button.textContent = '复制代码'
-          }, 1600)
-          codeCopyResetTimers.push(timer)
+          if (disposed) return
+          button.textContent = '复制失败，请手动选择'
+          button.classList.remove('is-copied')
         }
+        resetTimer = window.setTimeout(reset, 2000)
       }
 
+      pre.tabIndex = 0
+      pre.setAttribute('aria-label', '代码块，可横向滚动')
       button.addEventListener('click', handleCopy)
-      codeBlockCleanupCallbacks.push(() => button?.removeEventListener('click', handleCopy))
+      codeBlockCleanupCallbacks.push(() => {
+        window.clearTimeout(resetTimer)
+        button?.removeEventListener('click', handleCopy)
+      })
     })
   }
 
   const enhanceContent = async () => {
     syncToc()
     await nextTick()
-    observeHeadings()
+    if (disposed) return
+    trackHeadings()
     await enhanceCodeBlocks()
+    if (disposed) return
+    contentRef.value?.querySelectorAll<HTMLElement>('table, .katex-display').forEach((element) => {
+      element.tabIndex = 0
+      element.setAttribute('aria-label', element.tagName === 'TABLE' ? '数据表格，可横向滚动' : '数学公式，可横向滚动')
+    })
   }
 
-  onMounted(enhanceContent)
+  onMounted(async () => {
+    await enhanceContent()
+    if (disposed) return
+    if (window.location.hash) {
+      try { scrollToHeading(decodeURIComponent(window.location.hash.slice(1))) } catch { /* Invalid external hash. */ }
+    }
+  })
   watch(contentKey, enhanceContent, { flush: 'post' })
 
   onBeforeUnmount(() => {
-    disconnectHeadingObserver()
+    disposed = true
+    disconnectHeadings()
     cleanupCodeBlocks()
   })
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ContentTocItem } from '~/composables/useContentEnhancements'
+import type { ContentTocItem } from '~/utils/contentToc'
 import { buildTocRows, visibleTocRows } from '~/utils/contentToc'
 
 const props = defineProps<{
@@ -16,6 +16,12 @@ const collapsed = ref(new Set<string>())
 const rows = computed(() => buildTocRows(props.items))
 const branches = computed(() => rows.value.filter((row) => row.hasChildren))
 const visibleRows = computed(() => visibleTocRows(rows.value, collapsed.value))
+
+const activeVisibleId = computed(() => {
+  const active = rows.value.find((row) => row.id === props.activeHeadingId)
+  if (!active) return ''
+  return active.ancestors.find((id) => collapsed.value.has(id)) || active.id
+})
 
 const toggleBranch = (id: string) => {
   const next = new Set(collapsed.value)
@@ -79,9 +85,9 @@ const navigate = async (id: string) => {
           <span v-else class="article-toc-spacer" aria-hidden="true" />
           <a
             :href="`#${item.id}`"
-            :aria-current="activeHeadingId === item.id ? 'location' : undefined"
+            :aria-current="activeVisibleId === item.id ? 'location' : undefined"
             class="article-toc-link"
-            :class="{ 'is-active': activeHeadingId === item.id }"
+            :class="{ 'is-active': activeVisibleId === item.id }"
             @click.prevent="navigate(item.id)"
           >
             {{ item.text }}

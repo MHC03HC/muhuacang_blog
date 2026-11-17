@@ -1,19 +1,21 @@
 import { useRuntimeConfig } from '#app'
 
+export const siteName = '阿木木的技术博客'
+
 export const seoConfig = {
-  siteName: '阿木木的技术笔记',
+  siteName,
   siteNameEn: 'Amumu Notes',
   subtitle: '个人技术博客',
   author: '阿木木',
   lang: 'zh-CN',
-  defaultTitle: '阿木木的技术笔记',
+  defaultTitle: siteName,
   defaultDescription: '记录科研项目、算法学习、Linux 折腾和工程实践的个人技术博客。',
   defaultKeywords: ['MoE', '强化学习', '点云处理', '具身智能', 'Linux', 'Fedora', '科研笔记'],
-  defaultOgTitle: '阿木木的技术笔记',
+  defaultOgTitle: siteName,
   defaultOgDescription: '记录科研项目、算法学习、Linux 折腾和工程实践的个人技术博客。',
-  defaultOgSiteName: '阿木木的技术笔记',
+  defaultOgSiteName: siteName,
   defaultOgImage: '',
-  defaultTwitterTitle: '阿木木的技术笔记',
+  defaultTwitterTitle: siteName,
   defaultTwitterDescription: '记录科研项目、算法学习、Linux 折腾和工程实践的个人技术博客。',
   defaultTwitterImage: '',
   pages: {

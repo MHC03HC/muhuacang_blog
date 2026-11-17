@@ -43,7 +43,8 @@ export const useTheme = () => {
   onMounted(() => {
     if (!import.meta.client) return
 
-    const stored = localStorage.getItem(THEME_STORAGE_KEY)
+    let stored: string | null = null
+    try { stored = localStorage.getItem(THEME_STORAGE_KEY) } catch { /* Storage can be disabled. */ }
     if (stored === 'light' || stored === 'dark') {
       preference.value = stored
     } else {
@@ -64,11 +65,10 @@ export const useTheme = () => {
     (value) => {
       if (!import.meta.client) return
 
-      if (value === 'system') {
-        localStorage.removeItem(THEME_STORAGE_KEY)
-      } else {
-        localStorage.setItem(THEME_STORAGE_KEY, value)
-      }
+      try {
+        if (value === 'system') localStorage.removeItem(THEME_STORAGE_KEY)
+        else localStorage.setItem(THEME_STORAGE_KEY, value)
+      } catch { /* Theme switching still works without persistence. */ }
 
       syncTheme()
     }

@@ -92,7 +92,7 @@ muhuacang_blog/
 ├── app/
 │   ├── assets/css/
 │   │   ├── theme.css            # 浅色/深色主题变量
-│   │   └── app.css              # 布局、组件和正文样式
+│   │   └── app.css              # 样式导入入口，同目录按基础/布局/组件/页面/正文分层
 │   ├── components/              # 页头、页脚、卡片等组件
 │   ├── composables/             # 主题、内容查询和正文增强逻辑
 │   ├── pages/                   # Nuxt 页面与路由
@@ -216,13 +216,21 @@ related:
 - 博客正文、目录、复制代码、前后篇：`app/pages/blog/[slug].vue`
 - Wiki 正文、目录和复制代码：`app/pages/wiki/[slug].vue`
 - 博客/Wiki 摘要查询：`app/composables/useContentCollections.ts`
+- 共用正文组件：`app/components/ArticleContent.vue`
+- 详情页 SEO：`app/composables/useArticleSeo.ts`
+- 目录数据与兼容处理：`app/utils/contentToc.ts`
 - 公共目录和代码复制逻辑：`app/composables/useContentEnhancements.ts`
 - 全站搜索结果：`app/pages/search.vue`
 - 搜索匹配与摘要截断：`app/utils/contentSearch.ts`
 - 日期格式化：`app/utils/date.ts`
 - 深色模式状态：`app/composables/useTheme.ts`
 - 主题变量：`app/assets/css/theme.css`
-- 全局布局和代码块样式：`app/assets/css/app.css`
+- 样式入口：`app/assets/css/app.css`
+- 布局与导航：`app/assets/css/layout.css`
+- 首页等页面：`app/assets/css/pages.css`
+- 公共卡片与控件：`app/assets/css/components.css`
+- 文章正文与目录：`app/assets/css/content.css`
+- 全局基础与无障碍：`app/assets/css/base.css`
 - 文章目录与代码复制：`app/composables/useContentEnhancements.ts`
 - SEO 默认信息：`app/utils/seo.ts`
 - 404 页面：`error.vue` 和 `public/404.html`

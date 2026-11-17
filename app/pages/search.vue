@@ -68,7 +68,7 @@ useSeoMeta({
   <div class="site-container page-shell">
     <header class="page-header">
       <h1>搜索结果</h1>
-      <p v-if="searchQuery">“{{ searchQuery }}”共找到 {{ resultCount }} 项内容。</p>
+      <p v-if="searchQuery" role="status">“{{ searchQuery }}”共找到 {{ resultCount }} 项内容。</p>
       <p v-else>输入关键词，搜索博客文章和 Wiki 条目。</p>
     </header>
 
@@ -81,6 +81,7 @@ useSeoMeta({
         autocomplete="off"
         aria-label="搜索博客和 Wiki"
       >
+      <button type="submit" class="primary-btn">搜索</button>
     </form>
 
     <section v-if="filteredPosts.length" class="home-section">

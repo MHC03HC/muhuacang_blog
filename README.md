@@ -57,7 +57,7 @@ npm run dev
 - Wiki 条目：`content/wiki/*.md`
 - 页面：`app/pages/`
 - 主题变量：`app/assets/css/theme.css`
-- 全局样式：`app/assets/css/app.css`
+- 样式入口：`app/assets/css/app.css`；基础、布局、公共组件、页面与正文分别位于同目录的 `base.css`、`layout.css`、`components.css`、`pages.css`、`content.css`。
 - 站点 SEO：`app/utils/seo.ts`
 - 静态检查：`scripts/check-static-output.mjs`
 
@@ -67,6 +67,7 @@ npm run dev
 npm run build
 npm run generate
 npm run check:static
+npm run test:content
 ```
 
 静态生成结果位于 `.output/public/`。

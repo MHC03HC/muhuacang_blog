@@ -42,6 +42,7 @@ const latestPosts = computed(() => {
 <template>
   <div class="home-page">
     <section class="hero-section site-container">
+      <div class="hero-copy">
       <h1>欢迎来到阿木木的菜鸟成长基地</h1>
       <p class="hero-summary">
         这里记录我的科研项目、算法笔记、论文阅读笔记和 Linux 折腾过程。
@@ -51,7 +52,9 @@ const latestPosts = computed(() => {
 
       <div class="hero-actions">
         <NuxtLink to="/blog" class="primary-btn">进入博客</NuxtLink>
-        <NuxtLink to="/about" class="ghost-btn">关于我</NuxtLink>
+        <NuxtLink to="/wiki" class="ghost-btn">浏览 Wiki</NuxtLink>
+      </div>
+
       </div>
 
       <div class="hero-avatar" aria-hidden="true">

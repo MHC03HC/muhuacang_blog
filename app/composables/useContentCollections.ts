@@ -1,3 +1,5 @@
+import { seoConfig } from '~/utils/seo'
+
 export type PostSummary = {
   title: string
   slug: string
@@ -35,7 +37,7 @@ export const usePostSummaries = () => {
         description: post.description,
         excerpt: post.excerpt,
         date: post.date,
-        author: post.author,
+        author: post.author || seoConfig.author,
         tags: post.tags || []
       }))
       .sort((a, b) => timestamp(b.date) - timestamp(a.date))

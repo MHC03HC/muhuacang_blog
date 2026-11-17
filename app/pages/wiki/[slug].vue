@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
+import { seoConfig } from '~/utils/seo'
 import { formatChineseDate } from '~/utils/date'
 
 const route = useRoute()
-const siteUrl = useSiteUrl()
 const slug = computed(() => String(route.params.slug || ''))
-const articleBodyRef = ref<HTMLElement | null>(null)
 
 const { data: entry } = await useAsyncData(
   () => `wiki-${slug.value}`,
@@ -31,54 +29,12 @@ const entryKeywords = computed(() => {
   const values = [entry.value?.title, entry.value?.category, ...(entry.value?.tags || [])]
   return values.filter(Boolean) as string[]
 })
-const entryImage = computed(() => resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage, siteUrl))
-const canonical = computed(() => resolveAbsoluteUrl(`/wiki/${slug.value}`, siteUrl))
-
-useHead(() => ({
-  title: entry.value?.title || 'Wiki',
-  meta: [
-    {
-      name: 'description',
-      content: entryDescription.value
-    },
-    {
-      name: 'keywords',
-      content: joinKeywords(entryKeywords.value.length ? entryKeywords.value : seoConfig.defaultKeywords)
-    },
-    {
-      property: 'og:type',
-      content: 'article'
-    },
-    {
-      property: 'og:title',
-      content: entry.value?.title || 'Wiki'
-    },
-    {
-      property: 'og:description',
-      content: entryDescription.value
-    },
-    {
-      name: 'twitter:card',
-      content: entryImage.value ? 'summary_large_image' : 'summary'
-    },
-    {
-      name: 'twitter:title',
-      content: entry.value?.title || 'Wiki'
-    },
-    {
-      name: 'twitter:description',
-      content: entryDescription.value
-    }
-  ].concat(entryImage.value
-    ? [
-        { property: 'og:image', content: entryImage.value },
-        { name: 'twitter:image', content: entryImage.value }
-      ]
-    : []),
-  link: canonical.value
-    ? [{ rel: 'canonical', href: canonical.value }]
-    : []
-}))
+useArticleSeo({
+  title: () => entry.value?.title || 'Wiki',
+  description: () => entryDescription.value,
+  keywords: () => entryKeywords.value.length ? entryKeywords.value : seoConfig.defaultKeywords,
+  path: () => `/wiki/${slug.value}`
+})
 
 const relatedEntries = computed(() => {
   const relatedSlugs = entry.value?.related || []
@@ -87,17 +43,6 @@ const relatedEntries = computed(() => {
   const relatedSet = new Set(relatedSlugs)
   return (allWikiEntries.value || []).filter((item) => relatedSet.has(item.slug))
 })
-
-const {
-  tocItems,
-  activeHeadingId,
-  shouldShowToc,
-  scrollToHeading
-} = useContentEnhancements(
-  articleBodyRef,
-  () => entry.value?.slug,
-  () => entry.value?.body
-)
 </script>
 
 <template>
@@ -113,18 +58,7 @@ const {
       <p class="article-description">{{ entry.description }}</p>
     </header>
 
-    <div class="article-layout" :class="{ 'has-toc': shouldShowToc }">
-      <ArticleToc
-        v-if="shouldShowToc"
-        :items="tocItems"
-        :active-heading-id="activeHeadingId"
-        @navigate="scrollToHeading"
-      />
-
-      <div ref="articleBodyRef" class="article-body">
-        <ContentRenderer :value="entry" />
-      </div>
-    </div>
+    <ArticleContent :value="entry" />
 
     <section v-if="relatedEntries.length" class="home-section">
       <div class="section-head">
