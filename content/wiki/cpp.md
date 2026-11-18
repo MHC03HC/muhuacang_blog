@@ -806,3 +806,167 @@ int main(){
     return 0;
 }   
 ```
+# 8.结构体
+结构体属于用户自定义的数据类型，允许用户存储不同的数据类型
+
+## 8.1结构体定义和使用
+**语法**:`struct 结构体名 {结构体成员列表}`;
+通过结构体创建变量的方式有三种:
+- struct结构体名 变量名
+- struct结构体名 变量名={成员1值，成员2值...}
+- 定义结构体时顺便创建变量
+```cpp
+#include<iostream>
+using namespace std; 
+#include<string>
+struct Student{
+    string a;
+    int b;
+    char c;
+}s3;//3.在定义结构体的同时定义了一个结构体变量s3
+int main(){
+    Student s1;//1.struct结构体名 变量名,struct可以省略
+    //s1 这个变量里面自带了这三个成员
+    s1.a="John";
+    s1.b=20;
+    s1.c='A';
+    cout<<s1.a<<" "<<s1.b<<" "<<s1.c<<endl;
+    //2.struct结构体名 变量名={成员1值，成员2值...}
+    struct Student s2={"Alice", 22, 'B'};//结构体内成员的初始化顺序必须与结构体定义中成员的顺序一致
+    cout<<s2.a<<" "<<s2.b<<" "<<s2.c<<endl;
+    s3.a="Bob";
+    s3.b=25;
+    s3.c='C';
+    cout<<s3.a<<" "<<s3.b<<" "<<s3.c<<endl;
+    return 0;
+}   
+```
+
+# 8.2结构体和数组
+**作用**：将自定义的结构体放入到数组中方便维护
+**语法**：`struct 结构体名 数组名[元素个数]={{},{}…{}}`
+```cpp
+#include<iostream>
+using namespace std; 
+#include<string>
+struct Student{
+    string name;
+    int age;
+    char score;
+};
+int main(){
+    struct Student stuarry[3] = {{"张三",18,'A'},{"李四",19,'B'},{"王五",20,'C'}};
+    stuarry[0].name = "赵六";//结构体中的内容可以更改
+    for(int i=0;i<3;i++){
+        cout<<"姓名:"<<stuarry[i].name<<"\t年龄:"<<stuarry[i].age<<"\t成绩:"<<stuarry[i].score<<endl;
+    }
+    return 0;
+}   
+```
+
+# 8.3结构体指针
+- 利用操作符`->`可以通过结构体指针访问结构体属性
+```cpp
+#include<iostream>
+using namespace std; 
+#include<string>
+struct Student{
+    string name;
+    int age;
+    char score;
+};
+int main(){
+    struct Student stuarry[3] = {{"张三",18,'A'},{"李四",19,'B'},{"王五",20,'C'}};
+    Student *p = stuarry;
+    for(int i = 0; i < 3; i++){
+        cout << "姓名：" << p->name << "\t年龄：" << p->age << "\t成绩：" << p->score << endl;//通过结构体指针访问结构体中的属性，必须使用->
+        p++;
+    }
+    return 0;
+} 
+```
+## 8.4结构体嵌套结构体
+**作用**：结构体中的成员可以是另一个结构体
+```cpp
+#include<iostream>
+using namespace std; 
+#include<string>
+struct student{
+    string name;
+    int age;
+    char score;
+};
+struct teacher{
+    string name;
+    int age;
+    char score;
+    student stu;
+};
+int main(){
+    teacher t = {"张老师", 30, 'A', };
+    t.stu.name = "小明";
+    t.stu.age = 20;
+    t.stu.score = 'B';
+    cout << "老师姓名：" << t.name << "\t老师年龄：" << t.age << "\t老师成绩：" << t.score << endl;
+    cout << "学生姓名：" << t.stu.name << "\t学生年龄：" << t.stu.age << "\t学生成绩：" << t.stu.score << endl;
+    return 0;
+}   
+```
+
+## 8.5结构体做函数参数
+**作用**：将结构体作为参数向函数中传递，传递方式分为值传递和地址传递
+```cpp
+#include<iostream>
+using namespace std; 
+#include<string>
+struct student{
+    string name;
+    int age;
+    char score;
+};
+void print(student s){//传入的是值,修改的是副本
+    s.name="lisi";
+    cout<<s.name<<endl;
+    cout<<s.age<<endl;
+    cout<<s.score<<endl;
+}
+void print2(student * p){//传入的是地址,直接修改原来的值
+    p->name="lisi";
+    cout<<p->name<<endl;
+    cout<<p->age<<endl;
+    cout<<p->score<<endl;
+}
+int main(){
+    student s1={"zhangsan",18,'A'};
+    print(s1);
+    cout<<s1.name<<endl;
+    print2(&s1);
+    cout<<s1.name<<endl;
+    return 0;
+}   
+```
+
+## 8.6结构体中const使用场景
+**作用**：防止误操作
+```cpp
+#include<iostream>
+using namespace std; 
+#include<string>
+struct student{
+    string name;
+    int age;
+    char score;
+};
+//将函数中的形参改为指针，可以减少内存空间，而且不会复制新的副本出来
+void print2(const student * p){
+    p->name="lisi";//加上const之后这里就是不对的，会报错
+    cout<<p->name<<endl;
+    cout<<p->age<<endl;
+    cout<<p->score<<endl;
+}
+int main(){
+    student s1={"zhangsan",18,'A'};
+    cout<<s1.name<<endl;
+    print2(&s1);
+    cout<<s1.name<<endl;
+    return 0;
