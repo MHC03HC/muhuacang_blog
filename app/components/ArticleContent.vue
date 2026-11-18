@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const props = defineProps<{ value: Record<string, unknown> }>()
+import type { PageCollectionItemBase } from '@nuxt/content'
+
+const props = defineProps<{ value: PageCollectionItemBase & { slug: string } }>()
 const bodyRef = ref<HTMLElement | null>(null)
 const { tocItems, activeHeadingId, shouldShowToc, scrollToHeading } = useContentEnhancements(
   bodyRef,

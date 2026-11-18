@@ -6,7 +6,7 @@ const route = useRoute()
 const router = useRouter()
 const searchInput = ref('')
 const searchQuery = ref('')
-const { data: documents, error, status, refresh } = await useFullTextIndex()
+const { data: documents, error, status } = await useFullTextIndex()
 
 const syncQuery = () => {
   const value = typeof route.query.q === 'string' ? route.query.q.trim().slice(0, 200) : ''
@@ -28,10 +28,6 @@ const clearSearch = async () => {
   await submitSearch()
 }
 const results = computed(() => searchDocuments(documents.value || [], searchQuery.value))
-const groups = computed(() => [
-  { kind: 'blog', label: '博客', items: results.value.filter(result => result.document.kind === 'blog') },
-  { kind: 'wiki', label: 'Wiki', items: results.value.filter(result => result.document.kind === 'wiki') }
-].filter(group => group.items.length))
 
 useHead({ title: '搜索' })
 useSeoMeta({ description: '全文搜索阿木木的博客和 Wiki，查找标题、简介、章节及正文。', robots: 'noindex, follow' })
@@ -58,33 +54,35 @@ useSeoMeta({ description: '全文搜索阿木木的博客和 Wiki，查找标题
 
     <div v-if="error" class="post-card" role="alert">
       <p>搜索内容加载失败，请重试。</p>
-      <button type="button" class="ghost-btn" @click="refresh()">重新加载</button>
+      <!-- A failed client-side Content database request can remain cached.
+           Reload the static page to recover its generated search payload. -->
+      <button type="button" class="ghost-btn" @click="reloadNuxtApp({ force: true })">重新加载</button>
     </div>
     <p v-else-if="status === 'pending'" role="status">正在加载搜索内容…</p>
     <template v-else>
-      <section v-for="group in groups" :key="group.kind" class="home-section" :aria-label="`${group.label}搜索结果`">
-        <div class="section-head">
-          <h2>{{ group.label }}</h2>
-          <span>{{ group.items.length }} 篇</span>
-        </div>
+      <section v-if="results.length" class="home-section" aria-label="全文搜索结果">
         <div class="post-list">
-          <article v-for="result in group.items" :key="result.document.path" class="post-card search-result">
+          <article v-for="result in results" :key="result.document.path" class="post-card search-result">
             <div class="post-card-meta">
+              <span>{{ result.document.kind === 'blog' ? '博客' : 'Wiki' }}</span>
               <time :datetime="result.document.date">{{ formatChineseDate(result.document.date) }}</time>
             </div>
-            <h3 class="post-card-title">
+            <h2 class="post-card-title">
               <NuxtLink :to="result.document.path"><SearchHighlight :text="result.document.title" :query="searchQuery" /></NuxtLink>
-            </h3>
-            <ul class="search-hits">
+            </h2>
+            <p v-if="!result.hits.length && result.summary" class="search-hit-context">
+              <SearchHighlight :text="result.summary" :query="searchQuery" />
+            </p>
+            <ul v-if="result.hits.length" class="search-hits">
               <li v-for="hit in result.hits" :key="hit.href">
                 <NuxtLink :to="hit.href" class="search-hit-heading">
                   <SearchHighlight :text="hit.heading" :query="searchQuery" />
                   <span v-if="hit.href.includes('#')" class="search-hit-action">定位章节 →</span>
                 </NuxtLink>
-                <p class="search-hit-context"><SearchHighlight :text="hit.snippet" :query="searchQuery" /></p>
+                <p v-if="hit.snippet" class="search-hit-context"><SearchHighlight :text="hit.snippet" :query="searchQuery" /></p>
               </li>
             </ul>
-            <NuxtLink :to="result.document.path" class="post-card-link">{{ group.kind === 'blog' ? '阅读全文' : '查看条目' }}</NuxtLink>
+            <NuxtLink :to="result.document.path" class="post-card-link">{{ result.document.kind === 'blog' ? '阅读全文' : '查看条目' }}</NuxtLink>
           </article>
         </div>
       </section>

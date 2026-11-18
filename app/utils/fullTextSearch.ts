@@ -11,18 +11,36 @@ export type TextPart = { text: string; highlighted: boolean }
 
 const termsOf = (query: string) => [...new Set(query.trim().toLowerCase().split(/\s+/u).filter(Boolean))]
 
-// Work with literal ranges, never regular expressions made from user input or HTML.
-export const highlightSearchText = (text: string, query: string): TextPart[] => {
-  const ranges: Array<[number, number]> = []
+// Map lowercase offsets back to the original text. Some Unicode characters
+// expand when lowercased (for example İ), so their string offsets can differ.
+const matchRanges = (text: string, terms: string[]): Array<[number, number]> => {
   const lower = text.toLowerCase()
-  for (const term of termsOf(query)) {
+  let offset = 0
+  const starts: number[] = []
+  const ends: number[] = []
+  for (const character of text) {
+    const folded = character.toLowerCase()
+    for (let index = 0; index < folded.length; index++) {
+      starts.push(offset)
+      ends.push(offset + character.length)
+    }
+    offset += character.length
+  }
+  const ranges: Array<[number, number]> = []
+  for (const term of terms) {
     let start = lower.indexOf(term)
     while (start >= 0) {
-      ranges.push([start, start + term.length])
-      start = lower.indexOf(term, start + term.length)
+      ranges.push([starts[start]!, ends[start + term.length - 1]!])
+      start = lower.indexOf(term, start + 1)
     }
   }
   ranges.sort((a, b) => a[0] - b[0])
+  return ranges
+}
+
+// Literal text ranges are rendered as Vue text nodes, never user-supplied HTML.
+export const highlightSearchText = (text: string, query: string): TextPart[] => {
+  const ranges = matchRanges(text, termsOf(query))
   const merged: Array<[number, number]> = []
   for (const range of ranges) {
     const previous = merged.at(-1)
@@ -42,43 +60,74 @@ export const highlightSearchText = (text: string, query: string): TextPart[] => 
 
 export const searchContext = (text: string, query: string, length = 180) => {
   const compact = text.replace(/\s+/gu, ' ').trim()
-  const matches = termsOf(query).map(term => compact.toLowerCase().indexOf(term)).filter(index => index >= 0)
-  let start = matches.length ? Math.max(0, Math.min(...matches) - 55) : 0
-  start = Math.min(start, Math.max(0, compact.length - length))
-  // Avoid cutting a surrogate pair at either boundary.
-  if (start && /[\uDC00-\uDFFF]/u.test(compact[start]!)) start--
-  let end = Math.min(compact.length, start + length)
-  if (end < compact.length && /[\uDC00-\uDFFF]/u.test(compact[end]!)) end++
-  return `${start ? '…' : ''}${compact.slice(start, end)}${end < compact.length ? '…' : ''}`
+  const first = matchRanges(compact, termsOf(query))[0]
+  if (!first || length <= 0) return ''
+  const characters = Array.from(compact)
+  const matchStart = Array.from(compact.slice(0, first[0])).length
+  const matchLength = Array.from(compact.slice(first[0], first[1])).length
+  // Keep the actual match in the window, including queries longer than the
+  // normal excerpt. Count Unicode code points rather than UTF-16 code units.
+  const size = Math.max(Math.floor(length), matchLength)
+  const start = Math.min(Math.max(0, matchStart - Math.min(55, size - matchLength)), Math.max(0, characters.length - size))
+  const end = Math.min(characters.length, start + size)
+  return `${start ? '…' : ''}${characters.slice(start, end).join('')}${end < characters.length ? '…' : ''}`
+}
+
+// Lexicographic scores keep each field's priority independent of article length
+// and repeated occurrences. Final ties retain section order or sort by URL.
+const compareScores = (a: number[], b: number[]) => {
+  for (let index = 0; index < a.length; index++) {
+    const difference = b[index]! - a[index]!
+    if (difference) return difference
+  }
+  return 0
 }
 
 export const searchDocuments = (documents: SearchDocument[], query: string) => {
   const terms = termsOf(query)
   if (!terms.length) return []
+  const phrase = terms.join(' ')
   return documents.flatMap(document => {
     const title = document.title.toLowerCase()
     const description = document.description.toLowerCase()
-    const hits = document.sections.flatMap(section => {
-      const heading = section.heading.toLowerCase()
-      const content = section.content.toLowerCase()
-      const fields = [title, description, heading, content].join(' ')
-      if (!terms.every(term => fields.includes(term))) return []
-      const score = terms.reduce((sum, term) => sum
-        + (title.includes(term) ? 40 : 0)
-        + (description.includes(term) ? 12 : 0)
-        + (heading.includes(term) ? 30 : 0)
-        + (content.includes(term) ? 4 : 0), 0)
+    const sections = document.sections.map(section => ({
+      ...section, headingText: section.heading.toLowerCase(), bodyText: section.content.toLowerCase()
+    }))
+    const fields = [title, description, ...sections.flatMap(section => [section.headingText, section.bodyText])]
+    // AND applies to the whole article, allowing terms in different chapters.
+    if (!terms.every(term => fields.some(field => field.includes(term)))) return []
+    const countMatches = (text: string) => terms.filter(term => text.includes(term)).length
+    const hits = sections.flatMap(section => {
+      const heading = section.headingText
+      const content = section.bodyText
+      const coverage = terms.filter(term => heading.includes(term) || content.includes(term)).length
+      // Nuxt's unanchored root section also contains the article description.
+      // Use it for article matching and summaries, never as a chapter link.
+      if (!section.anchor || !coverage) return []
       return [{
         heading: section.heading || '文章内容',
         href: document.path + (section.anchor ? `#${encodeURIComponent(section.anchor)}` : ''),
-        snippet: searchContext(section.content || document.description, query),
-        score
+        snippet: searchContext(section.content, query),
+        score: [coverage, Number(heading.trim().replace(/\s+/gu, ' ') === phrase), countMatches(heading), countMatches(content)]
       }]
-    }).sort((a, b) => b.score - a.score)
-    if (!hits.length) return []
-    // Title-only matches should not flood the result with every chapter.
-    const relevant = hits.filter(hit => terms.some(term =>
-      hit.heading.toLowerCase().includes(term) || hit.snippet.toLowerCase().includes(term)))
-    return [{ document, hits: (relevant.length ? relevant : hits).slice(0, 3), score: hits[0]!.score }]
-  }).sort((a, b) => b.score - a.score || a.document.path.localeCompare(b.document.path))
+    }).sort((a, b) => compareScores(a.score, b.score))
+    // Deduplicate before limiting. Keep the highest-ranked occurrence of a URL.
+    const seen = new Set<string>()
+    const related = hits.filter(hit => {
+      if (seen.has(hit.href)) return false
+      seen.add(hit.href)
+      return true
+    }).slice(0, 3)
+    const score = [
+      Number(title.trim().replace(/\s+/gu, ' ') === phrase), countMatches(title),
+      Math.max(0, ...sections.map(section => countMatches(section.headingText))),
+      countMatches(description), Math.max(0, ...sections.map(section =>
+        terms.filter(term => section.headingText.includes(term) || section.bodyText.includes(term)).length))
+    ]
+    const summary = searchContext(document.description, query)
+      || sections.filter(section => !section.anchor).map(section => searchContext(section.content, query)).find(Boolean)
+      || ''
+    return [{ document, hits: related, summary, score }]
+  }).sort((a, b) => compareScores(a.score, b.score)
+    || (a.document.path < b.document.path ? -1 : Number(a.document.path > b.document.path)))
 }
