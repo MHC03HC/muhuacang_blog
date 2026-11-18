@@ -3,6 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "build": "nuxt build",
     "check:static": "node scripts/check-static-output.mjs",
     "dev": "nuxt dev",

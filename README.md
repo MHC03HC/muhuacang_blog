@@ -69,6 +69,7 @@ npm run dev
 
 ```bash
 npm ci
+npm test
 npm run build
 npm run generate
 npm run check:static
@@ -76,6 +77,6 @@ npm run check:static
 
 静态生成结果位于 `.output/public/`。
 
-GitHub Actions 会自动执行安装、生产构建、静态生成和关键页面检查。正式部署仍然只需要发布 `.output/public/`，不需要运行 Node.js 服务。
+GitHub Actions 会自动执行安装、单元测试、生产构建、静态生成和关键页面检查。正式部署仍然只需要发布 `.output/public/`，不需要运行 Node.js 服务。
 
-仓库不保留独立单元测试文件，CI 持续运行构建与静态产物校验。修改搜索或目录逻辑后，需要重新执行针对性临时回归测试。
+正式单元测试集中在 `tests/full-text-search.test.mjs` 和 `tests/content-toc.test.mjs`，使用 Node.js 22 内置测试工具。本地与 CI 均通过 `npm test` 执行全文搜索、摘要高亮、目录层级与折叠逻辑的回归测试。测试结果直接显示在终端，临时报告、截图和调试日志应在验证后清理。
