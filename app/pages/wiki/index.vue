@@ -1,39 +1,9 @@
 <script setup lang="ts">
-import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
+import { seoConfig } from '~/utils/seo'
 
-const siteUrl = useSiteUrl()
-const wikiTitle = 'Wiki'
-const wikiDescription = '这里整理我在工程学习、科研项目和技术实践中反复用到的知识点。'
-const wikiKeywords = ['Wiki', '知识库', '工程学习', '科研项目', '技术实践']
-const wikiImage = resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage, siteUrl)
-const canonical = resolveAbsoluteUrl('/wiki', siteUrl)
+usePageSeo(() => ({ ...seoConfig.pages.wiki, path: '/wiki' }))
 
 const { data: wikiEntries } = await useWikiSummaries()
-
-useHead({
-  title: wikiTitle,
-  link: canonical
-    ? [{ rel: 'canonical', href: canonical }]
-    : []
-})
-
-useSeoMeta({
-  description: wikiDescription,
-  keywords: joinKeywords(wikiKeywords),
-  ogType: 'website',
-  ogTitle: wikiTitle,
-  ogDescription: wikiDescription,
-  twitterCard: wikiImage ? 'summary_large_image' : 'summary',
-  twitterTitle: wikiTitle,
-  twitterDescription: wikiDescription,
-  ...(wikiImage
-    ? {
-        ogImage: wikiImage,
-        twitterImage: wikiImage
-      }
-    : {})
-})
-
 </script>
 
 <template>

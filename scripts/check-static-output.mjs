@@ -1,5 +1,7 @@
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { parse } from 'yaml'
+import { checkStaticSeo } from './check-static-seo.mjs'
 
 const outputRoot = resolve('.output/public')
 const pageChecks = [
@@ -14,6 +16,7 @@ const pageChecks = [
 ]
 
 const failures = []
+const articles = new Map()
 
 // Cover every Markdown detail URL, not just the sample pages above.
 const markdownFiles = async (directory) => {
@@ -29,11 +32,15 @@ for (const [collection, route] of [['posts', 'blog'], ['wiki', 'wiki']]) {
   for (const file of await markdownFiles(resolve('content', collection))) {
     const markdown = await readFile(file, 'utf8')
     const frontmatter = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] || ''
-    const slug = frontmatter.match(/^slug:\s*(.+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, '')
+    const data = parse(frontmatter)
+    const slug = data?.slug
     if (!slug || !/^[a-zA-Z0-9_-]+$/.test(slug)) {
       failures.push(`${file} 缺少可检查的 slug`)
       continue
     }
+    const url = `/${route}/${slug}`
+    if (articles.has(url)) failures.push(`${file} 的路由重复：${url}`)
+    articles.set(url, data)
     const page = `${route}/${slug}/index.html`
     if (!pageChecks.some(([existing]) => existing === page)) pageChecks.push([page, 'article-body'])
   }
@@ -103,3 +110,5 @@ if (failures.length) {
 }
 
 console.log(`静态站点检查通过：${pageChecks.length} 个页面，2 个公共资源，以及内部链接、图片与目录锚点。`)
+
+console.log(await checkStaticSeo(outputRoot, pageHtml, articles))

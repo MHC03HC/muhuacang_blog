@@ -8,9 +8,11 @@ const resolveSystemTheme = (): ResolvedTheme => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
+export const useResolvedTheme = () => useState<ResolvedTheme>('theme-resolved', () => 'light')
+
 export const useTheme = () => {
   const preference = useState<ThemePreference>('theme-preference', () => 'system')
-  const resolvedTheme = useState<ResolvedTheme>('theme-resolved', () => 'light')
+  const resolvedTheme = useResolvedTheme()
 
   let cleanup: (() => void) | null = null
 

@@ -29,8 +29,10 @@ const clearSearch = async () => {
 }
 const results = computed(() => searchDocuments(documents.value || [], searchQuery.value))
 
-useHead({ title: '搜索' })
-useSeoMeta({ description: '全文搜索阿木木的博客和 Wiki，查找标题、简介、章节及正文。', robots: 'noindex, follow' })
+usePageSeo(() => ({
+  path: '/search', title: '搜索', robots: 'noindex, follow',
+  description: '全文搜索阿木木的博客和 Wiki，查找标题、简介、章节及正文。'
+}))
 </script>
 
 <template>

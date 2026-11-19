@@ -1,8 +1,9 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+import { siteOrigin } from './app/utils/seo'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
   modules: ['@nuxt/content'],
+  nitro: { prerender: { routes: ['/sitemap.xml', '/rss.xml'] } },
   content: {
     renderer: {
       anchorLinks: false
@@ -28,7 +29,7 @@ export default defineNuxtConfig({
   ],
   runtimeConfig: {
     public: {
-      siteUrl: 'https://www.muhuacang.cn'
+      siteUrl: siteOrigin
     }
   }
 })

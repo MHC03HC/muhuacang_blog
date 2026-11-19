@@ -31,6 +31,9 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+      - name: Check TypeScript and Vue templates
+        run: npm run typecheck
+
       - name: Build production application
         run: npm run build
 
@@ -39,3 +42,6 @@ jobs:
 
       - name: Check generated pages and assets
         run: npm run check:static
+
+      - name: Check reading and SEO in Chrome
+        run: npm run test:browser

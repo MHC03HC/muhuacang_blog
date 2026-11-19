@@ -10,7 +10,8 @@ const props = defineProps({
 })
 
 useHead({
-  title: '页面走丢了'
+  title: '页面走丢了',
+  meta: [{ name: 'robots', content: 'noindex, follow' }]
 })
 
 const handleNavigation = async (path: string) => {

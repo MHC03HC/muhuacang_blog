@@ -28,6 +28,7 @@ const isActive = (to: string) => {
       </NuxtLink>
 
       <div class="site-header-actions">
+        <span id="article-top-action" />
         <nav class="site-nav" aria-label="主导航">
           <NuxtLink
             v-for="item in navItems"

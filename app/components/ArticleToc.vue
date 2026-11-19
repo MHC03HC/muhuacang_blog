@@ -23,6 +23,17 @@ const activeVisibleId = computed(() => {
   return active.ancestors.find((id) => collapsed.value.has(id)) || active.id
 })
 
+const nav = ref<HTMLElement>()
+watch(activeVisibleId, () => {
+  const list = nav.value
+  const active = list?.querySelector<HTMLElement>('[aria-current="location"]')
+  if (!list || !active || !list.clientHeight) return
+  const bounds = list.getBoundingClientRect()
+  const link = active.getBoundingClientRect()
+  if (link.bottom > bounds.bottom) list.scrollTop += link.bottom - bounds.bottom
+  else if (link.top < bounds.top) list.scrollTop += link.top - bounds.top
+}, { flush: 'post' })
+
 const toggleBranch = (id: string) => {
   const next = new Set(collapsed.value)
   if (next.has(id)) next.delete(id)
@@ -61,7 +72,7 @@ const navigate = async (id: string) => {
         <span>文章目录 · {{ items.length }} 节</span>
         <span aria-hidden="true">{{ expanded ? '收起 −' : '展开 +' }}</span>
       </button>
-      <nav id="article-toc-links" aria-label="文章目录" :class="{ 'is-expanded': expanded }">
+      <nav ref="nav" id="article-toc-links" aria-label="文章目录" :class="{ 'is-expanded': expanded }">
         <div v-if="branches.length" class="article-toc-tools">
           <button type="button" :disabled="!collapsed.size" @click="expandAll">全部展开</button>
           <button type="button" :disabled="collapsed.size === branches.length" @click="collapseAll">全部折叠</button>

@@ -1,4 +1,4 @@
-import { useRuntimeConfig } from '#app'
+export const siteOrigin = 'https://www.muhuacang.cn'
 
 export const siteName = '阿木木的技术博客'
 
@@ -8,18 +8,14 @@ export const seoConfig = {
   subtitle: '个人技术博客',
   author: '阿木木',
   lang: 'zh-CN',
-  defaultTitle: siteName,
   defaultDescription: '记录科研项目、算法学习、Linux 折腾和工程实践的个人技术博客。',
   defaultKeywords: ['MoE', '强化学习', '点云处理', '具身智能', 'Linux', 'Fedora', '科研笔记'],
-  defaultOgTitle: siteName,
-  defaultOgDescription: '记录科研项目、算法学习、Linux 折腾和工程实践的个人技术博客。',
   defaultOgSiteName: siteName,
   defaultOgImage: '',
-  defaultTwitterTitle: siteName,
-  defaultTwitterDescription: '记录科研项目、算法学习、Linux 折腾和工程实践的个人技术博客。',
   defaultTwitterImage: '',
   pages: {
     home: {
+      title: siteName,
       description: '一个记录学习、项目和踩坑过程的个人技术博客。',
       keywords: ['科研项目', '算法笔记', '论文阅读', 'Linux', 'MoE', '强化学习', '点云处理', '具身智能']
     },
@@ -27,6 +23,11 @@ export const seoConfig = {
       title: '博客文章',
       description: '这里汇总了我的科研项目记录、算法笔记、Linux 使用笔记与工程实践总结。',
       keywords: ['博客文章', '科研项目', '算法笔记', 'Linux', '工程实践']
+    },
+    wiki: {
+      title: 'Wiki',
+      description: '这里整理我在工程学习、科研项目和技术实践中反复用到的知识点。',
+      keywords: ['Wiki', '知识库', '工程学习', '科研项目', '技术实践']
     },
     about: {
       title: '关于我',
@@ -40,34 +41,48 @@ export const joinKeywords = (keywords?: string[]) => {
   return (keywords || []).filter(Boolean).join(', ')
 }
 
-export const useSiteUrl = () => {
-  const runtimeConfig = useRuntimeConfig()
-  return String(runtimeConfig.public.siteUrl || '').trim()
+// The public origin is independent of the host serving a preview or a crawl.
+export function canonicalUrl(path: string, siteUrl = siteOrigin) {
+  const base = new URL(siteUrl || siteOrigin)
+  if (base.href !== siteOrigin + '/') throw new Error(`NUXT_PUBLIC_SITE_URL 应为 ${siteOrigin}`)
+  const url = new URL(path, base)
+  if (url.origin !== base.origin) throw new Error(`非站内 URL：${path}`)
+  return base.origin + (url.pathname.replace(/\/{2,}/g, '/').replace(/\/$/, '') || '/')
 }
 
-export const resolveAbsoluteUrl = (path = '/', siteUrl = '') => {
-  if (!siteUrl) return undefined
-
-  const base = siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`
-  return new URL(path.replace(/^\//, ''), base).toString()
+export function isIndexable(robots: unknown) {
+  return typeof robots !== 'string' || !robots.toLowerCase().split(/[,\s]+/).some(value => value === 'noindex' || value === 'none')
 }
 
-export const resolveImageUrl = (value?: string, siteUrl = '') => {
-  if (!value) return undefined
+export type PageSeo = {
+  path: string
+  title: string
+  description: string
+  keywords?: string[]
+  type?: 'website' | 'article' | 'profile'
+  robots?: string
+  schema?: 'BlogPosting' | 'TechArticle' | 'WebSite'
+  author?: string
+  published?: string
+  modified?: string
+}
 
-  const normalized = value.trim()
-
-  if (!normalized) return undefined
-  if (/^https?:\/\//i.test(normalized)) return normalized
-
-  if (normalized.startsWith('/')) {
-    return resolveAbsoluteUrl(normalized, siteUrl) || normalized
+export function structuredData(page: PageSeo, url: string) {
+  if (!page.schema || !isIndexable(page.robots)) return
+  const base = {
+    '@context': 'https://schema.org', '@type': page.schema,
+    url, description: page.description, inLanguage: seoConfig.lang
   }
-
-  if (/\.(png|jpe?g|webp|svg|ico)$/i.test(normalized)) {
-    const assetPath = `/${normalized.replace(/^\/+/, '')}`
-    return resolveAbsoluteUrl(assetPath, siteUrl) || assetPath
+  if (page.schema === 'WebSite') return { ...base, name: page.title }
+  return {
+    ...base, headline: page.title, mainEntityOfPage: url,
+    author: { '@type': 'Person', name: page.author || seoConfig.author },
+    ...(page.published && { datePublished: page.published }),
+    ...(page.modified && { dateModified: page.modified })
   }
+}
 
-  return undefined
+export function serializeJsonLd(value: NonNullable<ReturnType<typeof structuredData>>) {
+  // In a script element the HTML parser recognizes a closing tag even inside a JSON string.
+  return JSON.stringify(value).replace(/</g, '\\u003c')
 }

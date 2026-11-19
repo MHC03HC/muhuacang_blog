@@ -13,6 +13,7 @@ export default defineContentConfig({
         description: z.string().min(1),
         excerpt: z.string().optional(),
         date: isoDate,
+        updated: isoDate.optional(),
         author: z.string().default('阿木木'),
         tags: z.array(z.string()).default([])
       })

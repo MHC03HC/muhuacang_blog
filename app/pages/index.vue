@@ -1,36 +1,7 @@
 <script setup lang="ts">
-import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
+import { seoConfig } from '~/utils/seo'
 
-const siteUrl = useSiteUrl()
-const homeDescription = seoConfig.pages.home.description || seoConfig.defaultDescription
-const homeKeywords = seoConfig.pages.home.keywords?.length
-  ? seoConfig.pages.home.keywords
-  : seoConfig.defaultKeywords
-const homeImage = resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage, siteUrl)
-const canonical = resolveAbsoluteUrl('/', siteUrl)
-
-useHead({
-  link: canonical
-    ? [{ rel: 'canonical', href: canonical }]
-    : []
-})
-
-useSeoMeta({
-  description: homeDescription,
-  keywords: joinKeywords(homeKeywords),
-  ogType: 'website',
-  ogTitle: seoConfig.defaultOgTitle,
-  ogDescription: homeDescription,
-  twitterCard: homeImage ? 'summary_large_image' : 'summary',
-  twitterTitle: seoConfig.defaultTwitterTitle,
-  twitterDescription: homeDescription,
-  ...(homeImage
-    ? {
-        ogImage: homeImage,
-        twitterImage: homeImage
-      }
-    : {})
-})
+usePageSeo(() => ({ ...seoConfig.pages.home, path: '/', schema: 'WebSite' }))
 
 const { data: posts } = await usePostSummaries()
 

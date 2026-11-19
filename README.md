@@ -53,7 +53,7 @@ npm run dev
 
 浏览器访问终端显示的地址，通常是 <http://localhost:3000>。
 
-正式部署前复制 `.env.example` 为 `.env`，并填写 `NUXT_PUBLIC_SITE_URL`。该变量只用于生成静态页面的规范链接和分享地址，不会启动后端服务。
+规范链接使用正式域名 `https://www.muhuacang.cn`。构建已提供默认值，如设置 `NUXT_PUBLIC_SITE_URL`，请使用同一域名。
 
 ## 内容位置
 
@@ -65,11 +65,47 @@ npm run dev
 - 站点 SEO：`app/utils/seo.ts`
 - 静态检查：`scripts/check-static-output.mjs`
 
+## 技术文章写法
+
+博客和 Wiki 使用相同的 MDC 语法。提示支持 `note`、`tip`、`warning`、`important`，可包含列表、链接和行内代码。
+
+````md
+::callout{type="tip"}
+运行前检查 `config.yaml` 中的数据路径。
+::
+
+::code-tabs
+#python
+```python [train.py]
+print("ready")
+```
+
+#cpp
+```cpp [main.cpp]
+int main() { return 0; }
+```
+::
+
+```mermaid
+flowchart LR
+  A[读取配置] --> B[开始训练]
+```
+````
+
+单独的代码围栏也支持方括号文件名。Mermaid 使用站点主题，支持 `accTitle` 作为图片说明。内嵌配置会触发源码降级。更多示例见 [阅读组件测试样例](tests/fixtures/reading.md)。
+
+## RSS 与索引
+
+读者可从页脚或阅读器订阅 [博客 RSS](https://www.muhuacang.cn/rss.xml)。[Sitemap](https://www.muhuacang.cn/sitemap.xml) 收录公开博客和 Wiki。新增文章后重新静态生成即可更新两份文件。仅供验证的内容可在 Frontmatter 设置 `seo: { robots: "noindex, follow" }` 退出收录。
+
+博客的 `date` 表示发布日期。RSS 按规范将日期编码为当天 00:00 GMT。博客和 Wiki 的 `updated` 用于结构化数据和 Sitemap 的修改日期，缺少该字段时省略修改日期。
+
 ## 构建
 
 ```bash
 npm ci
 npm test
+npm run typecheck
 npm run build
 npm run generate
 npm run check:static
@@ -77,6 +113,6 @@ npm run check:static
 
 静态生成结果位于 `.output/public/`。
 
-GitHub Actions 会自动执行安装、单元测试、生产构建、静态生成和关键页面检查。正式部署仍然只需要发布 `.output/public/`，不需要运行 Node.js 服务。
+GitHub Actions 会自动执行单元测试、类型检查、生产构建、静态生成、HTML/XML 检查和浏览器回归。正式部署仍然只需要发布 `.output/public/`，不需要运行 Node.js 服务。
 
-正式单元测试集中在 `tests/full-text-search.test.mjs` 和 `tests/content-toc.test.mjs`，使用 Node.js 22 内置测试工具。本地与 CI 均通过 `npm test` 执行全文搜索、摘要高亮、目录层级与折叠逻辑的回归测试。测试结果直接显示在终端，临时报告、截图和调试日志应在验证后清理。
+使用 `npm run typecheck` 检查 TypeScript 和 Vue 模板。`npm test` 覆盖全文搜索、目录、阅读进度及 Sitemap、RSS、Canonical 和 JSON-LD 的生成规则。安装 Chrome 后可用 `npm run test:browser` 验证静态页面交互，或设置 `CHROME_BIN` 指向本机 Chromium。浏览器测试从临时目录生成含样例的站点。

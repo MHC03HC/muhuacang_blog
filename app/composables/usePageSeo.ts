@@ -1,0 +1,33 @@
+import { canonicalUrl, joinKeywords, seoConfig, siteOrigin, serializeJsonLd, structuredData, type PageSeo } from '~/utils/seo'
+
+export function usePageSeo(getPage: () => PageSeo) {
+  const origin = useRuntimeConfig().public.siteUrl
+  const page = computed(getPage)
+  const url = computed(() => canonicalUrl(page.value.path, origin))
+  const image = seoConfig.defaultOgImage || seoConfig.defaultTwitterImage
+  const imageUrl = image ? new URL(image, origin || siteOrigin).href : undefined
+
+  useHead(() => {
+    const schema = structuredData(page.value, url.value)
+    return {
+      title: page.value.title,
+      link: [{ rel: 'canonical', href: url.value }],
+      script: schema ? [{ key: 'page-schema', type: 'application/ld+json', innerHTML: serializeJsonLd(schema) }] : []
+    }
+  })
+  useSeoMeta({
+    description: () => page.value.description,
+    author: () => page.value.author || seoConfig.author,
+    keywords: () => joinKeywords(page.value.keywords || seoConfig.defaultKeywords),
+    robots: () => page.value.robots,
+    ogType: () => page.value.type || 'website',
+    ogUrl: () => url.value,
+    ogTitle: () => page.value.title,
+    ogDescription: () => page.value.description,
+    ogImage: imageUrl,
+    twitterCard: imageUrl ? 'summary_large_image' : 'summary',
+    twitterTitle: () => page.value.title,
+    twitterDescription: () => page.value.description,
+    twitterImage: imageUrl
+  })
+}

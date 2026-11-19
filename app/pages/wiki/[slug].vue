@@ -29,12 +29,16 @@ const entryKeywords = computed(() => {
   const values = [entry.value?.title, entry.value?.category, ...(entry.value?.tags || [])]
   return values.filter(Boolean) as string[]
 })
-useArticleSeo({
-  title: () => entry.value?.title || 'Wiki',
-  description: () => entryDescription.value,
-  keywords: () => entryKeywords.value.length ? entryKeywords.value : seoConfig.defaultKeywords,
-  path: () => `/wiki/${slug.value}`
-})
+usePageSeo(() => ({
+  title: entry.value?.title || 'Wiki',
+  description: entryDescription.value,
+  keywords: entryKeywords.value.length ? entryKeywords.value : seoConfig.defaultKeywords,
+  path: `/wiki/${entry.value?.slug || slug.value}`,
+  type: 'article',
+  schema: 'TechArticle',
+  robots: typeof entry.value?.seo?.robots === 'string' ? entry.value.seo.robots : undefined,
+  modified: entry.value?.updated
+}))
 
 const relatedEntries = computed(() => {
   const relatedSlugs = entry.value?.related || []

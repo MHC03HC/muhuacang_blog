@@ -48,12 +48,18 @@ const nextPost = computed(() => {
   return adjacentPosts.value?.[index + 1] || null
 })
 
-useArticleSeo({
-  title: () => post.value?.title || '文章',
-  description: () => articleDescription.value,
-  keywords: () => articleKeywords.value,
-  path: () => `/blog/${slug.value}`
-})
+usePageSeo(() => ({
+  title: post.value?.title || '文章',
+  description: articleDescription.value,
+  keywords: articleKeywords.value,
+  path: `/blog/${post.value?.slug || slug.value}`,
+  type: 'article',
+  schema: 'BlogPosting',
+  robots: typeof post.value?.seo?.robots === 'string' ? post.value.seo.robots : undefined,
+  author: post.value?.author,
+  published: post.value?.date,
+  modified: post.value?.updated
+}))
 </script>
 
 <template>

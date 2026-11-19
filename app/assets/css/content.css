@@ -1,6 +1,7 @@
 /* Article layout, table of contents and Markdown typography. */
 
 .article-shell {
+  grid-template-columns: minmax(0, 1fr);
   display: grid;
   gap: 1rem;
 }
@@ -26,7 +27,7 @@
 .article-toc {
   order: 0;
   position: sticky;
-  top: 96px;
+  top: calc(var(--reader-header, 77px) + 1rem);
   min-width: 0;
 }
 
@@ -50,7 +51,7 @@
 .article-toc nav {
   display: grid;
   gap: 0.2rem;
-  max-height: calc(100dvh - 160px);
+  max-height: calc(100dvh - var(--reader-header, 77px) - 5rem);
   overflow-y: auto;
   scrollbar-width: thin;
   overscroll-behavior: contain;
@@ -152,7 +153,7 @@
   line-height: 1.3;
   color: var(--text);
   font-weight: 700;
-  scroll-margin-top: var(--heading-offset, 104px);
+  scroll-margin-top: calc(var(--reader-header, 77px) + 24px);
 }
 
 .article-body h1 {
@@ -291,9 +292,21 @@
   margin-block: 1.5rem;
 }
 
-.code-block-shell pre {
-  padding-top: 3.75rem;
+.code-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 16px 16px 0 0;
+  background: var(--code-bg);
+  color: var(--text-soft);
+  font-size: 0.82rem;
 }
+.code-filename { color: var(--text); font-family: monospace; }
+.article-body pre code .line { display: block; }
 
 .article-body .katex-display {
   max-width: 100%;
@@ -306,10 +319,7 @@
 }
 
 .code-copy-button {
-  position: absolute;
-  top: 0.7rem;
-  right: 0.7rem;
-  z-index: 2;
+  margin-left: auto;
   min-height: 36px;
   padding: 0 0.68rem;
   border: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
@@ -379,6 +389,11 @@
   border-radius: 16px;
 }
 
+.article-body .code-block-shell pre {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
 .article-body .shiki code,
 .article-body pre code {
   display: block;
@@ -441,7 +456,7 @@
 
 @media (max-width: 900px) {
   .article-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .article-toc {
@@ -492,7 +507,7 @@
   }
 
   .article-body :where(h1, h2, h3, h4, h5, h6) {
-    scroll-margin-top: var(--heading-offset, 160px);
+    scroll-margin-top: calc(var(--reader-header, 124px) + 24px);
   }
 
   .article-toc-branch,
@@ -550,4 +565,79 @@
   .article-body pre { font-size: 0.8125rem; }
   .article-toc-row { grid-template-columns: 32px minmax(0, 1fr); }
   .article-toc-branch, .article-toc-spacer { width: 32px; }
+}
+
+.reading-progress {
+  position: fixed;
+  z-index: 19;
+  inset: var(--reader-header, 77px) 0 auto;
+  height: 3px;
+  pointer-events: none;
+}
+.reading-progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+}
+.site-header-actions { position: relative; }
+#article-top-action { display: contents; }
+.article-top-button {
+  position: absolute;
+  right: calc(100% + 0.55rem);
+}
+@media (max-width: 760px) {
+  .article-top-button {
+    right: 0;
+    bottom: calc(100% + 0.35rem);
+  }
+}
+
+.article-callout {
+  --callout-mark: var(--accent);
+  margin-block: 1.5rem;
+  padding: 0.8rem 1rem;
+  border-inline-start: 3px solid var(--callout-mark);
+  border-radius: 0 0.6rem 0.6rem 0;
+  background: color-mix(in srgb, var(--callout-mark) 9%, var(--panel));
+}
+.article-callout[data-kind="tip"] { --callout-mark: #0d9488; }
+.article-callout[data-kind="warning"] { --callout-mark: #ca8a04; }
+.article-callout[data-kind="important"] { --callout-mark: #9865ce; }
+.article-callout > strong { display: block; margin-bottom: 0.35rem; color: var(--text); }
+.article-callout > :last-child { margin-bottom: 0; }
+.code-tabs { min-width: 0; margin-block: 1.5rem; }
+.code-tab-list { display: flex; gap: 0.3rem; padding: 0.25rem; overflow-x: auto; }
+.code-tab-list button {
+  flex: none;
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+.code-tab-list [aria-selected="true"] {
+  background: var(--panel-soft-strong);
+  color: var(--text);
+  font-weight: 700;
+}
+.code-tabs .code-block-shell { margin-block: 0.35rem 0; }
+.article-diagram { position: relative; min-width: 0; margin: 1.5rem 0; }
+.article-diagram figcaption { margin-bottom: 0.4rem; color: var(--text-soft); }
+.diagram-viewport { overflow-x: auto; padding: 0.5rem; background: var(--panel); border-radius: 12px; }
+.article-body .diagram-viewport img {
+  max-width: 100%;
+  margin: 0 auto;
+  border-radius: 0;
+}
+.diagram-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
 }

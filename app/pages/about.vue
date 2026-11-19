@@ -1,39 +1,8 @@
 <script setup lang="ts">
 import { profile } from '~/utils/profile'
-import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
+import { seoConfig } from '~/utils/seo'
 
-const siteUrl = useSiteUrl()
-const aboutTitle = seoConfig.pages.about.title || '关于我'
-const aboutDescription = seoConfig.pages.about.description || '了解阿木木的研究方向、学习记录和这座博客背后的整理思路。'
-const aboutKeywords = seoConfig.pages.about.keywords?.length
-  ? seoConfig.pages.about.keywords
-  : seoConfig.defaultKeywords
-const aboutImage = resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage, siteUrl)
-const canonical = resolveAbsoluteUrl('/about', siteUrl)
-
-useHead({
-  title: aboutTitle,
-  link: canonical
-    ? [{ rel: 'canonical', href: canonical }]
-    : []
-})
-
-useSeoMeta({
-  description: aboutDescription,
-  keywords: joinKeywords(aboutKeywords),
-  ogType: 'profile',
-  ogTitle: aboutTitle,
-  ogDescription: aboutDescription,
-  twitterCard: aboutImage ? 'summary_large_image' : 'summary',
-  twitterTitle: aboutTitle,
-  twitterDescription: aboutDescription,
-  ...(aboutImage
-    ? {
-        ogImage: aboutImage,
-        twitterImage: aboutImage
-      }
-    : {})
-})
+usePageSeo(() => ({ ...seoConfig.pages.about, path: '/about', type: 'profile' }))
 </script>
 
 <template>

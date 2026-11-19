@@ -1,40 +1,10 @@
 <script setup lang="ts">
-import { joinKeywords, resolveAbsoluteUrl, resolveImageUrl, seoConfig, useSiteUrl } from '~/utils/seo'
+import { seoConfig } from '~/utils/seo'
 import { matchesContentSearch, normalizeSearchQuery } from '~/utils/contentSearch'
 
-const siteUrl = useSiteUrl()
 const route = useRoute()
-const blogTitle = seoConfig.pages.blog.title || '博客文章'
-const blogDescription = seoConfig.pages.blog.description || '这里汇总了我的科研项目记录、算法笔记、Linux 使用笔记与工程实践总结。'
-const blogKeywords = seoConfig.pages.blog.keywords?.length
-  ? seoConfig.pages.blog.keywords
-  : seoConfig.defaultKeywords
-const blogImage = resolveImageUrl(seoConfig.defaultOgImage || seoConfig.defaultTwitterImage, siteUrl)
-const canonical = resolveAbsoluteUrl('/blog', siteUrl)
 
-useHead({
-  title: blogTitle,
-  link: canonical
-    ? [{ rel: 'canonical', href: canonical }]
-    : []
-})
-
-useSeoMeta({
-  description: blogDescription,
-  keywords: joinKeywords(blogKeywords),
-  ogType: 'website',
-  ogTitle: blogTitle,
-  ogDescription: blogDescription,
-  twitterCard: blogImage ? 'summary_large_image' : 'summary',
-  twitterTitle: blogTitle,
-  twitterDescription: blogDescription,
-  ...(blogImage
-    ? {
-        ogImage: blogImage,
-        twitterImage: blogImage
-      }
-    : {})
-})
+usePageSeo(() => ({ ...seoConfig.pages.blog, path: '/blog' }))
 
 const { data: posts } = await usePostSummaries()
 

@@ -7,9 +7,14 @@ useHead({
   htmlAttrs: {
     lang: seoConfig.lang
   },
-  titleTemplate: (titleChunk) => titleChunk ? `${titleChunk} - ${seoConfig.siteName}` : seoConfig.siteName,
+  titleTemplate: title => {
+    if (!title || title === seoConfig.siteName) return seoConfig.siteName
+    const suffix = ` - ${seoConfig.siteName}`
+    return title.endsWith(suffix) ? title : title + suffix
+  },
   link: [
-    { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
+    { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+    { rel: 'alternate', type: 'application/rss+xml', title: `${seoConfig.siteName} RSS`, href: '/rss.xml' }
   ],
   script: [
     {
