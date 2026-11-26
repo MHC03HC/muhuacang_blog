@@ -3,7 +3,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
   modules: ['@nuxt/content'],
-  nitro: { prerender: { routes: ['/sitemap.xml', '/rss.xml'] } },
+  nitro: { prerender: { routes: ['/sitemap.xml', '/rss.xml', '/search-index.json'] } },
   content: {
     renderer: {
       anchorLinks: false
@@ -24,8 +24,7 @@ export default defineNuxtConfig({
     '@fontsource-variable/inter',
     '@fontsource-variable/jetbrains-mono',
     '~/assets/css/theme.css',
-    '~/assets/css/app.css',
-    'katex/dist/katex.min.css'
+    '~/assets/css/app.css'
   ],
   runtimeConfig: {
     public: {

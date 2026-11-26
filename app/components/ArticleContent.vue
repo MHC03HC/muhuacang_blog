@@ -2,6 +2,14 @@
 import type { PageCollectionItemBase } from '@nuxt/content'
 
 const props = defineProps<{ value: PageCollectionItemBase & { slug: string } }>()
+// rehype-katex emits a MathML <math> element for inline and display formulas.
+const containsMath = (node: unknown): boolean =>
+  Array.isArray(node) && (node[0] === 'math' || node.some(containsMath))
+const needsMathStyles = computed(() => {
+  const body = props.value.body
+  return body.type !== 'minimark' || containsMath(body.value)
+})
+
 const bodyRef = ref<HTMLElement | null>(null)
 const { tocItems, activeHeadingId, shouldShowToc, scrollToHeading, progress, showTop, headerHeight, backToTop } = useContentEnhancements(
   bodyRef,
@@ -33,5 +41,6 @@ const { tocItems, activeHeadingId, shouldShowToc, scrollToHeading, progress, sho
     <div ref="bodyRef" class="article-body">
       <ContentRenderer :value="value" />
     </div>
+    <LazyArticleMathStyles v-if="needsMathStyles" />
   </div>
 </template>

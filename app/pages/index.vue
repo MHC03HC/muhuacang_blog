@@ -28,7 +28,8 @@ const latestPosts = computed(() => {
 
       </div>
 
-      <div class="hero-avatar" aria-hidden="true">
+      <picture class="hero-avatar" aria-hidden="true">
+        <source media="(max-width: 600px)" srcset="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
         <img
           src="/images/avatar.webp"
           alt=""
@@ -37,7 +38,7 @@ const latestPosts = computed(() => {
           decoding="async"
           fetchpriority="high"
         >
-      </div>
+      </picture>
     </section>
 
     <section class="home-section site-container">

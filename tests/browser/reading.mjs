@@ -12,7 +12,7 @@ import sirv from 'sirv'
 const sampleTitle = '构建样例 & C++ <T> 与 </script>'
 const sampleSlug = 'feed-integration-sample'
 const root = fileURLToPath(new URL('../../', import.meta.url))
-let workspace, browser, server, base, mermaidChunks
+let workspace, browser, server, base, mermaidChunks, searchChunk
 
 before(async () => {
   workspace = await mkdtemp(join(tmpdir(), 'blog-reader-'))
@@ -39,6 +39,7 @@ date: 2026-06-08
     .filter(([key]) => /renderMermaid|node_modules\/mermaid\//.test(key))
     .map(([, chunk]) => chunk.file))
   assert.ok(mermaidChunks.size > 1)
+  searchChunk = manifest['pages/search.vue'].file
   server = createServer(sirv(join(workspace, '.output/public')))
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   base = `http://127.0.0.1:${server.address().port}`
@@ -63,7 +64,9 @@ async function open(t, width, path) {
     if (msg.type() === 'error' || /hydration/i.test(msg.text())) errors.push(msg.text())
   })
   const diagramRequests = []
+  const paths = []
   page.on('request', req => {
+    paths.push(new URL(req.url()).pathname)
     if (mermaidChunks.has(basename(new URL(req.url()).pathname))) diagramRequests.push(req.url())
   })
   t.after(async () => {
@@ -72,12 +75,37 @@ async function open(t, width, path) {
   })
   await page.goto(base + path)
   await page.waitForLoadState('networkidle')
-  return { page, diagramRequests }
+  return { page, diagramRequests, paths }
 }
 
 const assertFits = async page => {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
 }
+
+test('search index loads once on demand across queries and route changes', async t => {
+  const { page, paths, diagramRequests } = await open(t, 1440, '/blog/blog-officially-starts')
+  const indexRequests = () => paths.filter(path => path === '/search-index.json').length
+  assert.ok(!paths.includes('/_nuxt/' + searchChunk))
+  assert.equal(indexRequests(), 0)
+  assert.deepEqual(diagramRequests, [])
+  await page.locator('header a[href="/search"]').click()
+  await page.locator('input[type=search]').waitFor()
+  await page.waitForLoadState('networkidle')
+  assert.equal(indexRequests(), 0)
+  for (const q of ['指针', 'C++']) {
+    await page.locator('input[type=search]').fill(q)
+    await page.locator('button[type=submit]').click()
+    await page.waitForURL(url => url.searchParams.get('q') === q)
+    await page.getByRole('status').filter({ hasText: `“${q}”` }).waitFor()
+    await page.locator('.search-result').first().waitFor()
+    assert.equal(indexRequests(), 1)
+  }
+  await page.locator('.search-result h2 a').first().click()
+  await page.getByRole('progressbar').waitFor()
+  await page.goBack()
+  await page.locator('.search-result').first().waitFor()
+  assert.equal(indexRequests(), 1)
+})
 
 async function atAnchor(page, expectedHash) {
   await page.waitForFunction(expected => {
@@ -200,6 +228,7 @@ for (const width of [360, 768, 1440]) {
   test(`${width}px · MDC callouts, H1–H6, tab keyboard and exact clipboard text`, async t => {
     const { page } = await open(t, width, '/wiki/reading-fixture')
     const body = page.locator('.article-body')
+    assert.match(await body.locator('.katex').first().evaluate(el => getComputedStyle(el).fontFamily), /KaTeX_Main/)
     const headings = await body.locator('h1,h2,h3,h4,h5,h6').evaluateAll(nodes => nodes.map(n => n.tagName))
     assert.deepEqual(headings, ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'])
     assert.equal(await page.locator('.article-toc-link').count(), 6)
@@ -239,7 +268,9 @@ for (const width of [360, 768, 1440]) {
     assert.deepEqual(diagramRequests, [])
     for (const diagram of await diagrams.all()) {
       await diagram.scrollIntoViewIfNeeded()
-      await diagram.locator('img').waitFor()
+      const image = diagram.locator('img')
+      await image.waitFor()
+      await image.evaluate(el => el.decode())
     }
     assert.ok(diagramRequests.length)
     await assertFits(page)
@@ -259,6 +290,9 @@ for (const width of [360, 768, 1440]) {
     await page.waitForFunction(src => document.querySelector('img[alt="系统架构"]')?.src !== src, initial)
     assert.equal(await page.locator('figure .diagram-measure svg').count(), 0)
     assert.equal(diagramRequests.length, requests)
+    await page.getByRole('button', { name: '切换到浅色模式' }).click()
+    await page.waitForFunction(src => document.querySelector('img[alt="系统架构"]')?.src === src, initial)
+    await arch.evaluate(img => img.decode())
     const failures = page.locator('.article-diagram').filter({ has: page.locator('pre') })
     await failures.last().scrollIntoViewIfNeeded()
     await page.waitForFunction(() => document.querySelectorAll('.article-diagram [role=status]').length === 2)

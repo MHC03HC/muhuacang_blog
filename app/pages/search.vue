@@ -6,12 +6,13 @@ const route = useRoute()
 const router = useRouter()
 const searchInput = ref('')
 const searchQuery = ref('')
-const { data: documents, error, status } = await useFullTextIndex()
+const { data: documents, error, status, execute } = useFullTextIndex()
 
 const syncQuery = () => {
   const value = typeof route.query.q === 'string' ? route.query.q.trim().slice(0, 200) : ''
   searchInput.value = value
   searchQuery.value = value
+  if (value && !documents.value && status.value !== 'pending') void execute()
 }
 // A generated /search page has no query at build time. Apply URL state after
 // hydration so direct links and browser back/forward do not mismatch its HTML.
@@ -39,7 +40,7 @@ usePageSeo(() => ({
   <div class="site-container page-shell search-page">
     <header class="page-header">
       <h1>搜索结果</h1>
-      <p v-if="searchQuery && !error" role="status">“{{ searchQuery }}”共找到 {{ results.length }} 篇内容。</p>
+      <p v-if="searchQuery && documents && !error" role="status">“{{ searchQuery }}”共找到 {{ results.length }} 篇内容。</p>
       <p v-else>搜索博客与 Wiki 的标题、简介、章节和正文。</p>
     </header>
 
@@ -56,9 +57,7 @@ usePageSeo(() => ({
 
     <div v-if="error" class="post-card" role="alert">
       <p>搜索内容加载失败，请重试。</p>
-      <!-- A failed client-side Content database request can remain cached.
-           Reload the static page to recover its generated search payload. -->
-      <button type="button" class="ghost-btn" @click="reloadNuxtApp({ force: true })">重新加载</button>
+      <button type="button" class="ghost-btn" @click="execute()">重新加载</button>
     </div>
     <p v-else-if="status === 'pending'" role="status">正在加载搜索内容…</p>
     <template v-else>
@@ -95,3 +94,5 @@ usePageSeo(() => ({
     </template>
   </div>
 </template>
+
+<style src="~/assets/css/search.css"></style>

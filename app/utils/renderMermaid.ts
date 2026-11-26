@@ -12,7 +12,8 @@ export function renderMermaid(id: string, source: string, theme: Theme, host: HT
     if (configuredTheme !== theme) {
       mermaid.initialize({
         startOnLoad: false, theme: theme === 'dark' ? 'dark' : 'default',
-        securityLevel: 'strict', htmlLabels: false, suppressErrorRendering: true
+        // Both layouts ship with Mermaid. Dagre avoids loading ELK for ordinary flowcharts.
+        layout: 'dagre', securityLevel: 'strict', htmlLabels: false, suppressErrorRendering: true
       })
       configuredTheme = theme
     }

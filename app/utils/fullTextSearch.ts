@@ -18,19 +18,22 @@ const matchRanges = (text: string, terms: string[]): Array<[number, number]> => 
   let offset = 0
   const starts: number[] = []
   const ends: number[] = []
-  for (const character of text) {
-    const folded = character.toLowerCase()
-    for (let index = 0; index < folded.length; index++) {
-      starts.push(offset)
-      ends.push(offset + character.length)
+  const needOffsets = lower.length !== text.length || terms.some(term => /^[\uDC00-\uDFFF]|[\uD800-\uDBFF]$/.test(term))
+  if (needOffsets) {
+    for (const character of text) {
+      const folded = character.toLowerCase()
+      for (let index = 0; index < folded.length; index++) {
+        starts.push(offset)
+        ends.push(offset + character.length)
+      }
+      offset += character.length
     }
-    offset += character.length
   }
   const ranges: Array<[number, number]> = []
   for (const term of terms) {
     let start = lower.indexOf(term)
     while (start >= 0) {
-      ranges.push([starts[start]!, ends[start + term.length - 1]!])
+      ranges.push(needOffsets ? [starts[start]!, ends[start + term.length - 1]!] : [start, start + term.length])
       start = lower.indexOf(term, start + 1)
     }
   }
@@ -107,7 +110,7 @@ export const searchDocuments = (documents: SearchDocument[], query: string) => {
       return [{
         heading: section.heading || '文章内容',
         href: document.path + (section.anchor ? `#${encodeURIComponent(section.anchor)}` : ''),
-        snippet: searchContext(section.content, query),
+        content: section.content,
         score: [coverage, Number(heading.trim().replace(/\s+/gu, ' ') === phrase), countMatches(heading), countMatches(content)]
       }]
     }).sort((a, b) => compareScores(a.score, b.score))
@@ -117,7 +120,7 @@ export const searchDocuments = (documents: SearchDocument[], query: string) => {
       if (seen.has(hit.href)) return false
       seen.add(hit.href)
       return true
-    }).slice(0, 3)
+    }).slice(0, 3).map(({ content, ...hit }) => ({ ...hit, snippet: searchContext(content, query) }))
     const score = [
       Number(title.trim().replace(/\s+/gu, ' ') === phrase), countMatches(title),
       Math.max(0, ...sections.map(section => countMatches(section.headingText))),

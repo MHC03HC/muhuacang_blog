@@ -4,12 +4,20 @@ const theme = useResolvedTheme()
 const figure = ref<HTMLElement>()
 const host = ref<HTMLElement>()
 const near = ref(false)
-const picture = shallowRef<{ url: string, width: number, alt: string }>()
+type Picture = { url: string, width: number, alt: string }
+const picture = shallowRef<Picture>()
+const variants = new Map<string, Picture>()
 const error = ref('')
 const id = `diagram-${useId()}`
 let observer: IntersectionObserver | undefined
 let visibilityTimer: ReturnType<typeof setTimeout>
 let renderedTheme: string | undefined
+
+function showPicture(next: Picture, color: string) {
+  if (picture.value && !variants.has(renderedTheme || '')) URL.revokeObjectURL(picture.value.url)
+  picture.value = next
+  renderedTheme = color
+}
 
 onMounted(() => {
   observer = new IntersectionObserver(([entry]) => {
@@ -24,6 +32,11 @@ onMounted(() => {
 
 watch([near, theme], async ([visible, color], _, onCleanup) => {
   if (!visible || !host.value || renderedTheme === color || error.value) return
+  const cached = variants.get(color)
+  if (cached) {
+    showPicture(cached, color)
+    return
+  }
   let current = true
   onCleanup(() => { current = false })
   try {
@@ -40,10 +53,10 @@ watch([near, theme], async ([visible, color], _, onCleanup) => {
     if (root.localName !== 'svg') throw new Error('无效的 SVG。')
     const width = Number(root.getAttribute('viewBox')?.trim().split(/[\s,]+/)[2]) || 0
     // Image embedding keeps generated SVG outside the page's active DOM.
-    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
-    if (picture.value) URL.revokeObjectURL(picture.value.url)
-    picture.value = { url, width, alt: doc.querySelector('title')?.textContent || props.filename || 'Mermaid 技术图表' }
-    renderedTheme = color
+    const blob = new Blob([svg], { type: 'image/svg+xml' })
+    const next = { url: URL.createObjectURL(blob), width, alt: doc.querySelector('title')?.textContent || props.filename || 'Mermaid 技术图表' }
+    if (blob.size <= 128 * 1024) variants.set(color, next)
+    showPicture(next, color)
   } catch (cause) {
     if (current) error.value = cause instanceof Error ? cause.message.split('\n')[0] || '语法错误' : '渲染失败'
   }
@@ -52,7 +65,8 @@ watch([near, theme], async ([visible, color], _, onCleanup) => {
 onBeforeUnmount(() => {
   observer?.disconnect()
   clearTimeout(visibilityTimer)
-  if (picture.value) URL.revokeObjectURL(picture.value.url)
+  for (const variant of variants.values()) URL.revokeObjectURL(variant.url)
+  if (picture.value && !variants.has(renderedTheme || '')) URL.revokeObjectURL(picture.value.url)
 })
 </script>
 

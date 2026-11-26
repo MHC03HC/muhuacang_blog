@@ -44,6 +44,7 @@ const isActive = (to: string) => {
 
         <NuxtLink
           to="/search"
+          prefetch-on="interaction"
           class="theme-toggle"
           aria-label="搜索"
           title="搜索"
