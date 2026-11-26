@@ -251,7 +251,7 @@ for (const width of [360, 768, 1440]) {
     assert.equal(await panel.getAttribute('aria-labelledby'), await body.getByRole('tab', { name: 'C++' }).getAttribute('id'))
     assert.equal(await panel.locator('.code-filename').textContent(), 'main.cpp')
     await panel.getByRole('button').click()
-    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), 'int main() { return 0; }\n')
+    assert.equal((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n'), 'int main() { return 0; }\n')
     await body.getByRole('tab', { name: 'C++' }).press('Home')
     assert.equal(await panel.locator('pre.shiki .line').textContent(), 'print("Python")\n')
     assert.ok(await body.locator('pre.language-js').isVisible())

@@ -21,11 +21,11 @@
     "better-sqlite3": "^12.10.0",
     "katex": "^0.19.1",
     "mermaid": "^12.3.0",
-    "nuxt": "^4.4.6",
+    "nuxt": "^4.7.0",
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
     "vue": "^3.5.34",
-    "vue-router": "^5.0.7"
+    "vue-router": "5.5.1"
   },
   "devDependencies": {
     "@xmldom/xmldom": "^0.9.12",
@@ -35,5 +35,11 @@
     "typescript": "~5.9.3",
     "vue-tsc": "~3.3.14",
     "yaml": "^2.9.0"
+  },
+  "overrides": {
+    "katex": "$katex",
+    "readdir-glob": {
+      "minimatch": "^11.0.9"
+    }
   }
 }

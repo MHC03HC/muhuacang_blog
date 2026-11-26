@@ -1,5 +1,5 @@
 import { readFile, readdir, stat } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { resolve, sep } from 'node:path'
 import { parse } from 'yaml'
 import { checkStaticSeo } from './check-static-seo.mjs'
 
@@ -87,7 +87,7 @@ for (const [page, html] of pageHtml) {
     const target = tag === 'img' || /\.[a-z0-9]+$/i.test(path)
       ? path : `${path.replace(/\/$/, '')}${path ? '/' : ''}index.html`
     const targetPath = resolve(outputRoot, target)
-    if (!targetPath.startsWith(`${outputRoot}/`) || !await exists(targetPath)) {
+    if (!targetPath.startsWith(`${outputRoot}${sep}`) || !await exists(targetPath)) {
       failures.push(`${page} 的本地链接或图片不存在：${raw}`)
       continue
     }

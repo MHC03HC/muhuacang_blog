@@ -12,13 +12,13 @@ export function usePageSeo(getPage: () => PageSeo) {
     return {
       title: page.value.title,
       link: [{ rel: 'canonical', href: url.value }],
+      meta: [{ name: 'keywords', content: joinKeywords(page.value.keywords || seoConfig.defaultKeywords) }],
       script: schema ? [{ key: 'page-schema', type: 'application/ld+json', innerHTML: serializeJsonLd(schema) }] : []
     }
   })
   useSeoMeta({
     description: () => page.value.description,
     author: () => page.value.author || seoConfig.author,
-    keywords: () => joinKeywords(page.value.keywords || seoConfig.defaultKeywords),
     robots: () => page.value.robots,
     ogType: () => page.value.type || 'website',
     ogUrl: () => url.value,

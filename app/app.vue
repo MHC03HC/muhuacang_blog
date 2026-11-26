@@ -25,7 +25,8 @@ useHead({
   ],
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-    { name: 'description', content: seoConfig.defaultDescription }
+    { name: 'description', content: seoConfig.defaultDescription },
+    { name: 'keywords', content: joinKeywords(seoConfig.defaultKeywords) }
   ]
 })
 
@@ -33,8 +34,7 @@ useSeoMeta({
   applicationName: seoConfig.siteName,
   author: seoConfig.author,
   ogSiteName: seoConfig.defaultOgSiteName,
-  ogLocale: 'zh_CN',
-  keywords: joinKeywords(seoConfig.defaultKeywords)
+  ogLocale: 'zh_CN'
 })
 </script>
 
