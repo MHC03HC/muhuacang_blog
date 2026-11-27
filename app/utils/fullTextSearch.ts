@@ -1,6 +1,6 @@
 export type SearchSection = { heading: string; anchor: string; content: string }
 export type SearchDocument = {
-  kind: 'blog' | 'wiki'
+  kind: 'blog' | 'wiki' | 'project'
   path: string
   title: string
   description: string

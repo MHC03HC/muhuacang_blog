@@ -25,9 +25,11 @@ const filteredPosts = computed(() => {
 </script>
 
 <template>
-  <div class="site-container page-shell">
+  <div class="site-container page-shell blog-page">
     <header class="page-header">
+      <p class="section-kicker">Blog</p>
       <h1>博客文章</h1>
+      <p>{{ seoConfig.pages.blog.description }}</p>
     </header>
 
     <section class="post-list">

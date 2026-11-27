@@ -2,6 +2,12 @@
 import { searchDocuments } from '~/utils/fullTextSearch'
 import { formatChineseDate } from '~/utils/date'
 
+const resultLabels = {
+  blog: { kind: '博客', action: '阅读全文' },
+  wiki: { kind: 'Wiki', action: '查看条目' },
+  project: { kind: '项目', action: '查看项目' }
+}
+
 const route = useRoute()
 const router = useRouter()
 const searchInput = ref('')
@@ -32,7 +38,7 @@ const results = computed(() => searchDocuments(documents.value || [], searchQuer
 
 usePageSeo(() => ({
   path: '/search', title: '搜索', robots: 'noindex, follow',
-  description: '全文搜索阿木木的博客和 Wiki，查找标题、简介、章节及正文。'
+  description: '全文搜索阿木木的博客、Wiki 和项目，查找标题、简介、章节及正文。'
 }))
 </script>
 
@@ -41,14 +47,14 @@ usePageSeo(() => ({
     <header class="page-header">
       <h1>搜索结果</h1>
       <p v-if="searchQuery && documents && !error" role="status">“{{ searchQuery }}”共找到 {{ results.length }} 篇内容。</p>
-      <p v-else>搜索博客与 Wiki 的标题、简介、章节和正文。</p>
+      <p v-else>搜索博客、Wiki 和项目的标题、简介、章节和正文。</p>
     </header>
 
     <form class="search-page-form" role="search" @submit.prevent="submitSearch">
       <input
         v-model="searchInput" type="search" class="site-search-input"
         placeholder="搜索全文，如：指针、Hello World" autocomplete="off"
-        aria-label="搜索博客和 Wiki 全文" aria-describedby="search-help" maxlength="200"
+        aria-label="搜索本站全文" aria-describedby="search-help" maxlength="200"
       >
       <button type="submit" class="primary-btn">搜索</button>
       <button v-if="searchQuery" type="button" class="ghost-btn" @click="clearSearch">清空</button>
@@ -65,8 +71,8 @@ usePageSeo(() => ({
         <div class="post-list">
           <article v-for="result in results" :key="result.document.path" class="post-card search-result">
             <div class="post-card-meta">
-              <span>{{ result.document.kind === 'blog' ? '博客' : 'Wiki' }}</span>
-              <time :datetime="result.document.date">{{ formatChineseDate(result.document.date) }}</time>
+              <span>{{ resultLabels[result.document.kind].kind }}</span>
+              <time v-if="result.document.date" :datetime="result.document.date">{{ formatChineseDate(result.document.date) }}</time>
             </div>
             <h2 class="post-card-title">
               <NuxtLink :to="result.document.path"><SearchHighlight :text="result.document.title" :query="searchQuery" /></NuxtLink>
@@ -78,12 +84,12 @@ usePageSeo(() => ({
               <li v-for="hit in result.hits" :key="hit.href">
                 <NuxtLink :to="hit.href" class="search-hit-heading">
                   <SearchHighlight :text="hit.heading" :query="searchQuery" />
-                  <span v-if="hit.href.includes('#')" class="search-hit-action">定位章节 →</span>
+                  <span v-if="hit.href.includes('#')" class="search-hit-action">定位章节</span>
                 </NuxtLink>
                 <p v-if="hit.snippet" class="search-hit-context"><SearchHighlight :text="hit.snippet" :query="searchQuery" /></p>
               </li>
             </ul>
-            <NuxtLink :to="result.document.path" class="post-card-link">{{ result.document.kind === 'blog' ? '阅读全文' : '查看条目' }}</NuxtLink>
+            <NuxtLink :to="result.document.path" class="post-card-link">{{ resultLabels[result.document.kind].action }}</NuxtLink>
           </article>
         </div>
       </section>

@@ -3,6 +3,7 @@ export const formatChineseDate = (value: string) => {
   if (Number.isNaN(date.getTime())) return value
 
   return date.toLocaleDateString('zh-CN', {
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'long',
     day: 'numeric'

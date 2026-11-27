@@ -5,11 +5,12 @@ import { checkStaticSeo } from './check-static-seo.mjs'
 
 const outputRoot = resolve('.output/public')
 const pageChecks = [
-  ['index.html', '欢迎来到阿木木的菜鸟成长基地'],
+  ['index.html', '探索技术，'],
   ['blog/index.html', '博客文章'],
   ['blog/blog-officially-starts/index.html', '我的个人博客正式启用'],
   ['wiki/index.html', 'Wiki'],
   ['wiki/cpp/index.html', 'C++探索之旅'],
+  ['projects/index.html', '科研与工程项目'],
   ['about/index.html', '关于我'],
   ['search/index.html', '搜索结果'],
   ['404.html', '页面走丢了']
@@ -21,14 +22,18 @@ const articles = new Map()
 // Cover every Markdown detail URL, not just the sample pages above.
 const markdownFiles = async (directory) => {
   const files = []
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
+  const entries = await readdir(directory, { withFileTypes: true }).catch(error => {
+    if (error.code === 'ENOENT') return []
+    throw error
+  })
+  for (const entry of entries) {
     const path = resolve(directory, entry.name)
     if (entry.isDirectory()) files.push(...await markdownFiles(path))
     else if (entry.name.endsWith('.md')) files.push(path)
   }
   return files
 }
-for (const [collection, route] of [['posts', 'blog'], ['wiki', 'wiki']]) {
+for (const [collection, route] of [['posts', 'blog'], ['wiki', 'wiki'], ['projects', 'projects']]) {
   for (const file of await markdownFiles(resolve('content', collection))) {
     const markdown = await readFile(file, 'utf8')
     const frontmatter = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] || ''
@@ -112,3 +117,23 @@ if (failures.length) {
 console.log(`静态站点检查通过：${pageChecks.length} 个页面，2 个公共资源，以及内部链接、图片与目录锚点。`)
 
 console.log(await checkStaticSeo(outputRoot, pageHtml, articles))
+
+const index = JSON.parse(await readFile(resolve(outputRoot, 'search-index.json'), 'utf8'))
+const indexedPaths = index.map(document => document.path).sort()
+const expectedPaths = [...articles.keys()].sort()
+if (JSON.stringify(indexedPaths) !== JSON.stringify(expectedPaths)) {
+  throw new Error('搜索索引与正式 Markdown 详情路由不一致。')
+}
+const projectList = pageHtml.get('projects/index.html')
+for (const document of index.filter(item => item.path.startsWith('/projects/'))) {
+  const project = articles.get(document.path)
+  if (document.kind !== 'project' || document.title !== project.title || document.description !== project.description
+    || document.date !== (project.updated || project.startDate || '')) throw new Error(`项目搜索摘要不一致：${document.path}`)
+  if (!projectList.includes(`href="${document.path}"`)) throw new Error(`项目列表缺少链接：${document.path}`)
+  const page = pageHtml.get(`${document.path.slice(1)}/index.html`)
+  for (const section of document.sections) {
+    if (section.anchor && !page.includes(`id="${section.anchor}"`)) throw new Error(`项目搜索锚点不存在：${document.path}#${section.anchor}`)
+  }
+  if (project.cover && !page.includes(`src="${project.cover}"`)) throw new Error(`项目详情未渲染封面：${document.path}`)
+}
+console.log(`搜索索引 ${index.length} 篇内容，项目列表及项目搜索章节锚点通过。`)

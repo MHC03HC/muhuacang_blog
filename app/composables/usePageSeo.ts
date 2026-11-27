@@ -4,8 +4,10 @@ export function usePageSeo(getPage: () => PageSeo) {
   const origin = useRuntimeConfig().public.siteUrl
   const page = computed(getPage)
   const url = computed(() => canonicalUrl(page.value.path, origin))
-  const image = seoConfig.defaultOgImage || seoConfig.defaultTwitterImage
-  const imageUrl = image ? new URL(image, origin || siteOrigin).href : undefined
+  const imageUrl = computed(() => {
+    const image = page.value.image || seoConfig.defaultOgImage || seoConfig.defaultTwitterImage
+    return image ? new URL(image, origin || siteOrigin).href : undefined
+  })
 
   useHead(() => {
     const schema = structuredData(page.value, url.value)
@@ -24,10 +26,10 @@ export function usePageSeo(getPage: () => PageSeo) {
     ogUrl: () => url.value,
     ogTitle: () => page.value.title,
     ogDescription: () => page.value.description,
-    ogImage: imageUrl,
-    twitterCard: imageUrl ? 'summary_large_image' : 'summary',
+    ogImage: () => imageUrl.value,
+    twitterCard: () => imageUrl.value ? 'summary_large_image' : 'summary',
     twitterTitle: () => page.value.title,
     twitterDescription: () => page.value.description,
-    twitterImage: imageUrl
+    twitterImage: () => imageUrl.value
   })
 }

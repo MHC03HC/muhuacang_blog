@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { NuxtError } from '#app'
 import type { PropType } from 'vue'
+import { themeInitScript } from '~/utils/theme'
 
 const props = defineProps({
   error: {
@@ -11,6 +12,8 @@ const props = defineProps({
 
 useHead({
   title: '页面走丢了',
+  htmlAttrs: { lang: 'zh-CN' },
+  script: [{ key: 'theme-init', innerHTML: themeInitScript, tagPosition: 'head' }],
   meta: [{ name: 'robots', content: 'noindex, follow' }]
 })
 
@@ -30,7 +33,7 @@ const statusCode = computed(() => props.error?.statusCode ?? 404)
         <div class="error-card">
           <p class="section-kicker">{{ statusCode }}</p>
           <h1>页面走丢了</h1>
-          <p class="error-copy">你访问的页面不存在，可能是链接错误或文章已移动。</p>
+          <p class="error-copy">你访问的页面不存在，可能是链接错误或内容已移动。</p>
 
           <div class="error-actions">
             <button type="button" class="primary-btn" @click="handleNavigation('/')">
@@ -38,6 +41,9 @@ const statusCode = computed(() => props.error?.statusCode ?? 404)
             </button>
             <button type="button" class="ghost-btn" @click="handleNavigation('/blog')">
               返回文章列表
+            </button>
+            <button type="button" class="ghost-btn" @click="handleNavigation('/wiki')">
+              浏览 Wiki
             </button>
           </div>
         </div>

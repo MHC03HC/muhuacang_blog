@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { execFileSync } from 'node:child_process'
-import { cp, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
@@ -16,10 +16,13 @@ let workspace, browser, server, base, mermaidChunks, searchChunk
 
 before(async () => {
   workspace = await mkdtemp(join(tmpdir(), 'blog-reader-'))
-  for (const name of ['app', 'server', 'content', 'public', 'nuxt.config.ts', 'content.config.ts', 'package.json', 'tsconfig.json', '.nuxtrc']) {
+  for (const name of ['app', 'server', 'content', 'public', 'nuxt.config.ts', 'content.config.ts', 'project-schema.ts', 'scripts', 'package.json', 'tsconfig.json', '.nuxtrc']) {
     await cp(join(root, name), join(workspace, name), { recursive: true })
   }
   await cp(join(root, 'tests/fixtures/reading.md'), join(workspace, 'content/wiki/reading-fixture.md'))
+  await cp(join(root, 'tests/fixtures/project.md'), join(workspace, 'content/projects/project-fixture.md'))
+  await mkdir(join(workspace, 'public/images/projects'), { recursive: true })
+  await cp(join(root, 'public/images/avatar.webp'), join(workspace, 'public/images/projects/fixture.webp'))
   // This post exists only in the isolated build and exercises automatic feed discovery.
   await writeFile(join(workspace, 'content/posts/new-article.md'), `---
 title: ${JSON.stringify(sampleTitle)}
@@ -40,7 +43,12 @@ date: 2026-06-08
     .map(([, chunk]) => chunk.file))
   assert.ok(mermaidChunks.size > 1)
   searchChunk = manifest['pages/search.vue'].file
-  server = createServer(sirv(join(workspace, '.output/public')))
+  const serve = sirv(join(workspace, '.output/public'))
+  const fallback = await readFile(join(workspace, '.output/public/404.html'))
+  server = createServer((req, res) => serve(req, res, () => {
+    res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' })
+    res.end(fallback)
+  }))
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   base = `http://127.0.0.1:${server.address().port}`
   browser = await chromium.launch({ channel: 'chrome', executablePath: process.env.CHROME_BIN })
@@ -88,6 +96,7 @@ test('search index loads once on demand across queries and route changes', async
   assert.ok(!paths.includes('/_nuxt/' + searchChunk))
   assert.equal(indexRequests(), 0)
   assert.deepEqual(diagramRequests, [])
+  assert.ok(!paths.some(path => /katex|ArticleMathStyles/i.test(path)))
   await page.locator('header a[href="/search"]').click()
   await page.locator('input[type=search]').waitFor()
   await page.waitForLoadState('networkidle')
@@ -129,6 +138,8 @@ test('static HTTP serves the sitemap, updated feed and crawl rules without JavaS
     if (path.endsWith('.xml')) {
       assert.ok(body.includes('https://www.muhuacang.cn/blog/' + sampleSlug))
       assert.ok(!body.includes('reading-fixture'))
+      assert.ok(!body.includes('project-fixture'))
+      assert.equal(body.includes('https://www.muhuacang.cn/projects/technical-blog'), path === '/sitemap.xml')
     }
   }
 })
@@ -256,7 +267,7 @@ for (const width of [360, 768, 1440]) {
     assert.equal(await panel.locator('pre.shiki .line').textContent(), 'print("Python")\n')
     assert.ok(await body.locator('pre.language-js').isVisible())
     assert.ok(await body.locator('pre.language-json').filter({ hasText: '{"name": "example"}' }).isVisible())
-    await page.getByRole('button', { name: '切换到深色模式' }).click()
+    await page.getByRole('combobox', { name: '外观主题' }).selectOption('dark')
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark')
     await assertFits(page)
   })
@@ -286,11 +297,11 @@ for (const width of [360, 768, 1440]) {
     const arch = page.getByRole('img', { name: '系统架构' })
     const initial = await arch.getAttribute('src')
     const requests = diagramRequests.length
-    await page.getByRole('button', { name: '切换到深色模式' }).click()
+    await page.getByRole('combobox', { name: '外观主题' }).selectOption('dark')
     await page.waitForFunction(src => document.querySelector('img[alt="系统架构"]')?.src !== src, initial)
     assert.equal(await page.locator('figure .diagram-measure svg').count(), 0)
     assert.equal(diagramRequests.length, requests)
-    await page.getByRole('button', { name: '切换到浅色模式' }).click()
+    await page.getByRole('combobox', { name: '外观主题' }).selectOption('light')
     await page.waitForFunction(src => document.querySelector('img[alt="系统架构"]')?.src === src, initial)
     await arch.evaluate(img => img.decode())
     const failures = page.locator('.article-diagram').filter({ has: page.locator('pre') })
@@ -301,3 +312,195 @@ for (const width of [360, 768, 1440]) {
     await assertFits(page)
   })
 }
+
+for (const width of [360, 768, 1440]) {
+  test(`${width}px · four homepage sections, featured links, project navigation and on-demand payloads`, async t => {
+    const { page, paths, diagramRequests } = await open(t, width, '/')
+    assert.deepEqual(await page.locator('.home-page > section').evaluateAll(nodes => nodes.map(node => node.getAttribute('aria-labelledby'))),
+      ['home-title', 'home-featured', 'home-projects', 'home-about'])
+    assert.deepEqual(await page.locator('.featured-card h3 a').evaluateAll(links => links.map(link => link.pathname)),
+      ['/blog/blog-officially-starts', '/wiki/gti', '/wiki/cpp'])
+    assert.equal(await page.locator('.featured-card.is-primary').count(), 1)
+    assert.equal(await page.locator('.featured-card.is-primary a').getAttribute('href'), '/blog/blog-officially-starts')
+    assert.equal(await page.locator('[aria-labelledby=home-projects] .project-card').count(), 1)
+    assert.equal(paths.includes('/images/avatar.webp'), width > 600)
+    assert.ok(!paths.includes('/search-index.json'))
+    assert.ok(!paths.some(path => path.startsWith('/projects/technical-blog/') && path.endsWith('_payload.json')))
+    assert.deepEqual(diagramRequests, [])
+    assert.equal(await page.locator('.katex').count(), 0)
+    assert.ok(!paths.some(path => /katex|ArticleMathStyles|jetbrains-mono/i.test(path)))
+    await assertFits(page)
+
+    const nav = page.getByRole('navigation', { name: '主导航' })
+    assert.equal(await nav.getByRole('link', { name: '首页' }).getAttribute('aria-current'), 'page')
+    for (const [slug, heading] of [['blog/blog-officially-starts', '我的个人博客正式启用'], ['wiki/gti', 'git使用教程'], ['wiki/cpp', 'C++探索之旅']]) {
+      await page.locator(`.featured-card a[href="/${slug}"]`).click()
+      await page.getByRole('heading', { level: 1, name: heading }).waitFor()
+      await page.goBack()
+    }
+    await page.getByRole('link', { name: '查看全部项目' }).click()
+    await page.getByRole('heading', { level: 1, name: '科研与工程项目' }).waitFor()
+    assert.equal(await nav.getByRole('link', { name: '项目' }).getAttribute('aria-current'), 'page')
+    assert.deepEqual(await page.locator('.project-card-title a').evaluateAll(links => links.map(link => link.pathname)),
+      ['/projects/project-fixture', '/projects/technical-blog'])
+    await page.waitForLoadState('networkidle')
+    assert.ok(!paths.some(path => /^\/projects\/[^/]+\/_payload\.json$/.test(path)))
+    assert.ok(!paths.includes('/search-index.json'))
+    assert.ok(!paths.some(path => /katex|ArticleMathStyles/i.test(path)))
+    await assertFits(page)
+    await page.goBack()
+    await page.locator('[aria-labelledby=home-projects]').getByRole('link', { name: '查看项目' }).click()
+    await page.getByRole('heading', { level: 1, name: '个人技术博客与知识库' }).waitFor()
+    assert.equal(await nav.getByRole('link', { name: '项目' }).getAttribute('aria-current'), 'page')
+    assert.equal(await page.locator('head link[rel=canonical]').getAttribute('href'), 'https://www.muhuacang.cn/projects/technical-blog')
+    await assertFits(page)
+  })
+
+  test(`${width}px · project reader uses Markdown, MDC, KaTeX and Mermaid and links to the search chapter`, async t => {
+    const { page } = await open(t, width, '/search?q=orbitalFixtureNeedle')
+    const result = page.locator('.search-result').filter({ hasText: '项目渲染验收样例' })
+    assert.equal(await result.locator('.post-card-meta span').textContent(), '项目')
+    await result.getByRole('link', { name: /技术方案/ }).click()
+    await atAnchor(page)
+    await page.getByRole('heading', { level: 1, name: '项目渲染验收样例' }).waitFor()
+    assert.equal(await page.locator('meta[name=robots]').getAttribute('content'), 'noindex, follow')
+    assert.equal(await page.locator('meta[property="og:image"]').getAttribute('content'), 'https://www.muhuacang.cn/images/projects/fixture.webp')
+    assert.equal(await page.locator('.project-detail-cover').evaluate(img => img.complete && img.naturalWidth > 0), true)
+    assert.equal(await page.getByRole('progressbar').count(), 1)
+    assert.equal(await page.locator('.article-toc-link').count(), 2)
+    const body = page.locator('.article-body')
+    await body.locator('pre.shiki').last().waitFor()
+    await body.getByRole('note', { name: '技巧' }).waitFor()
+    await body.getByRole('tab', { name: 'Bash' }).click()
+    await body.getByRole('tabpanel').getByText('echo', { exact: true }).waitFor()
+    assert.match(await body.locator('.katex').evaluate(el => getComputedStyle(el).fontFamily), /KaTeX_Main/)
+    await body.locator('.article-diagram').scrollIntoViewIfNeeded()
+    const diagram = body.getByRole('img', { name: '项目示意图' })
+    await diagram.waitFor()
+    await diagram.evaluate(img => img.decode())
+    assert.ok(await diagram.evaluate(img => img.naturalWidth > 0))
+    await body.getByRole('table').waitFor()
+    await assertFits(page)
+  })
+}
+
+test('theme preferences persist, old values survive, and system responds to media changes', async t => {
+  const { page } = await open(t, 768, '/')
+  const select = page.getByRole('combobox', { name: '外观主题' })
+  const expectTheme = async (preference, theme) => {
+    await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme)
+    assert.equal(await select.inputValue(), preference)
+  }
+  await expectTheme('system', 'light')
+  await page.evaluate(() => localStorage.setItem('amumu-theme', 'dark'))
+  await page.reload()
+  await expectTheme('dark', 'dark')
+  await select.selectOption('light')
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.reload()
+  await expectTheme('light', 'light')
+  await select.selectOption('system')
+  await expectTheme('system', 'dark')
+  assert.equal(await page.evaluate(() => localStorage.getItem('amumu-theme')), 'system')
+  await page.emulateMedia({ colorScheme: 'light' })
+  await expectTheme('system', 'light')
+  await page.evaluate(() => localStorage.setItem('amumu-theme', 'invalid'))
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.reload()
+  await expectTheme('system', 'dark')
+})
+
+test('mobile navigation is operable by keyboard with visible focus and usable controls', async t => {
+  const { page } = await open(t, 360, '/')
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Tab')
+  const visited = []
+  for (let index = 0; index < 8; index++) {
+    const target = await page.evaluate(() => {
+      const el = document.activeElement
+      const visibleFocus = el.matches('select') ? el.parentElement : el
+      return { label: el.getAttribute('aria-label') || el.textContent.trim(),
+        visibleFocus: parseFloat(getComputedStyle(visibleFocus).outlineWidth) >= 2, height: el.getBoundingClientRect().height }
+    })
+    visited.push(target.label)
+    assert.ok(target.visibleFocus, target.label)
+    assert.ok(target.height >= 44, target.label)
+    await page.keyboard.press('Tab')
+  }
+  for (const name of ['首页', '博客', 'Wiki', '项目', '关于', '搜索', '外观主题']) assert.ok(visited.includes(name), name)
+})
+
+test('project not found serves the same noindex fallback with working navigation', async t => {
+  const response = await fetch(base + '/projects/missing-project')
+  assert.equal(response.status, 404)
+  assert.match(await response.text(), /页面走丢了/)
+  const { page } = await open(t, 360, '/404.html')
+  assert.equal(await page.locator('meta[name=robots]').getAttribute('content'), 'noindex, follow')
+  await page.getByRole('link', { name: '浏览 Wiki' }).click()
+  await page.getByRole('heading', { level: 1, name: /Wiki.*知识库/ }).waitFor()
+  await assertFits(page)
+})
+
+test('rendered palette, controls, search highlights and Shiki syntax meet contrast thresholds', async t => {
+  const { page } = await open(t, 1440, '/')
+  async function measure(selectors) {
+    return page.evaluate(selectors => {
+      const canvas = document.createElement('canvas')
+      canvas.width = canvas.height = 1
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      function pixel(color) {
+        ctx.clearRect(0, 0, 1, 1)
+        ctx.fillStyle = color
+        ctx.fillRect(0, 0, 1, 1)
+        return [...ctx.getImageData(0, 0, 1, 1).data]
+      }
+      const luminosity = rgb => rgb.slice(0, 3).map(channel => {
+        const srgb = channel / 255
+        return srgb <= 0.04045 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4
+      }).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0)
+      const ratio = (one, two) => (Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05)
+      function background(node) {
+        const style = getComputedStyle(node)
+        const [r, g, b, alpha] = pixel(style.backgroundColor)
+        if (alpha === 255) return [r, g, b]
+        const under = node.parentElement ? background(node.parentElement) : [255, 255, 255]
+        return [r, g, b].map((channel, index) => (channel * alpha + under[index] * (255 - alpha)) / 255)
+      }
+      return selectors.map(([selector, property, minimum = 4.5]) => {
+        const nodes = [...document.querySelectorAll(selector)]
+        if (selector.includes('.shiki')) {
+          return [selector, minimum, ...nodes.filter(node => node.textContent.trim())
+            .map(node => ratio(luminosity(pixel(getComputedStyle(node).color)), luminosity(background(node))))]
+        }
+        const node = nodes[0]
+        const color = property === 'placeholder' ? getComputedStyle(node, '::placeholder').color
+          : getComputedStyle(node)[property || 'color']
+        return [selector, minimum, ratio(luminosity(pixel(color)), luminosity(background(node)))]
+      })
+    }, selectors)
+  }
+  for (const theme of ['light', 'dark']) {
+    await page.goto(base + '/')
+    await page.getByRole('combobox', { name: '外观主题' }).selectOption(theme)
+    const home = await measure([['.hero-copy h1'], ['.hero-summary'], ['.primary-btn'], ['.ghost-btn'],
+      ['.featured-card.is-primary p'], ['.featured-meta span'], ['.project-status'], ['.section-link']])
+    await page.goto(base + '/search?q=orbitalFixtureNeedle')
+    await page.locator('.search-result mark').first().waitFor()
+    const search = await measure([['input[type=search]'], ['input[type=search]', 'placeholder'],
+      ['input[type=search]', 'borderTopColor', 3], ['.search-result mark'], ['.search-hit-heading']])
+    await page.goto(base + '/projects/project-fixture')
+    const tokenSelector = '.article-body pre.shiki .line > span'
+    const reading = await measure([['.article-body p'], ['.article-body a'], ['.article-callout strong'], [tokenSelector]])
+    await page.goto(base + '/wiki/cpp')
+    const cpp = await measure([[tokenSelector]])
+    await page.goto(base + '/wiki/gti')
+    const git = await measure([[tokenSelector]])
+    for (const [selector, minimum, ...ratios] of [...home, ...search, ...reading, ...cpp, ...git]) {
+      assert.ok(ratios.length && Math.min(...ratios) >= minimum, `${theme} ${selector}: ${Math.min(...ratios)}:1`)
+    }
+    const regular = [...home, ...search, ...reading].filter(([, minimum]) => minimum === 4.5)
+    const syntax = [reading.at(-1), cpp[0], git[0]].flatMap(row => row.slice(2))
+    t.diagnostic(`${theme}: minimum text ratio ${Math.min(...regular.flatMap(row => row.slice(2))).toFixed(2)}:1, `
+      + `syntax ${Math.min(...syntax).toFixed(2)}:1, search border ${search[2][2].toFixed(2)}:1`)
+  }
+})

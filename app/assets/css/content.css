@@ -9,7 +9,7 @@
 .article-layout {
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: 200px minmax(0, 860px);
+  grid-template-columns: 12.5rem minmax(0, var(--reading-width));
   justify-content: center;
   align-items: start;
 }
@@ -20,7 +20,7 @@
 
 .article-layout:not(.has-toc) .article-body {
   width: 100%;
-  max-width: 860px;
+  max-width: var(--reading-width);
   margin-inline: auto;
 }
 
@@ -142,7 +142,7 @@
 
 .article-body {
   font-size: 1.05rem;
-  line-height: 1.8;
+  line-height: 1.85;
   color: var(--body-copy);
   min-width: 0;
   padding: clamp(1.25rem, 3vw, 2.25rem);
@@ -165,8 +165,8 @@
 
 .article-body h2 {
   margin-top: 2.2rem;
-  padding-left: 0.8rem;
-  border-left: 4px solid var(--accent);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--accent);
   font-size: 1.5rem;
 }
 
@@ -277,7 +277,7 @@
   border-radius: 16px;
   background: var(--code-bg);
   color: var(--code-text);
-  font-family: "JetBrains Mono Variable", "JetBrains Mono", "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-family: var(--font-code);
   font-size: 0.94rem;
   line-height: 1.7;
   white-space: pre;
@@ -329,7 +329,6 @@
   font: inherit;
   font-size: 0.84rem;
   font-weight: 700;
-  backdrop-filter: blur(10px);
   cursor: pointer;
   opacity: 0.96;
   transform: translateY(0);
@@ -354,7 +353,7 @@
 }
 
 .article-body code {
-  font-family: "JetBrains Mono Variable", "JetBrains Mono", "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-family: var(--font-code);
   font-size: 0.92em;
 }
 
@@ -553,12 +552,23 @@
 }
 .article-body table { overscroll-behavior-inline: contain; }
 .article-body pre { overscroll-behavior-inline: contain; }
-.article-body .shiki span { background-color: transparent; }
-:root[data-theme='light'] .article-body .shiki span {
-  color: var(--shiki-light, var(--shiki-default));
+/* Keep comment tokens readable on the site code surfaces while retaining their syntax hues. */
+.article-body .shiki span {
+  --syntax-color: var(--shiki-light, var(--shiki-default, var(--code-text)));
+  --syntax-background: var(--shiki-light-bg, var(--shiki-default-bg, transparent));
+  color: var(--syntax-color);
+  color: color-mix(in srgb, var(--syntax-color) 88%, var(--code-text));
+  background-color: var(--syntax-background);
 }
 :root[data-theme='dark'] .article-body .shiki span {
-  color: var(--shiki-dark, var(--shiki-default));
+  --syntax-color: var(--shiki-dark, var(--shiki-default, var(--code-text)));
+  --syntax-background: var(--shiki-dark-bg, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .article-body .shiki span {
+    --syntax-color: var(--shiki-dark, var(--shiki-default, var(--code-text)));
+    --syntax-background: var(--shiki-dark-bg, transparent);
+  }
 }
 @media (max-width: 600px) {
   .article-body { padding: 1rem; font-size: 1rem; }
@@ -580,16 +590,16 @@
   background: var(--accent);
   transform-origin: left;
 }
-.site-header-actions { position: relative; }
 #article-top-action { display: contents; }
+@media (min-width: 761px) { .site-header-actions { position: relative; } }
 .article-top-button {
   position: absolute;
   right: calc(100% + 0.55rem);
 }
 @media (max-width: 760px) {
   .article-top-button {
-    right: 0;
-    bottom: calc(100% + 0.35rem);
+    right: calc(2 * (2.75rem + var(--space-2)));
+    top: var(--space-2);
   }
 }
 
@@ -601,9 +611,9 @@
   border-radius: 0 0.6rem 0.6rem 0;
   background: color-mix(in srgb, var(--callout-mark) 9%, var(--panel));
 }
-.article-callout[data-kind="tip"] { --callout-mark: #0d9488; }
-.article-callout[data-kind="warning"] { --callout-mark: #ca8a04; }
-.article-callout[data-kind="important"] { --callout-mark: #9865ce; }
+.article-callout[data-kind="tip"] { --callout-mark: var(--callout-tip); }
+.article-callout[data-kind="warning"] { --callout-mark: var(--callout-warning); }
+.article-callout[data-kind="important"] { --callout-mark: var(--callout-important); }
 .article-callout > strong { display: block; margin-bottom: 0.35rem; color: var(--text); }
 .article-callout > :last-child { margin-bottom: 0; }
 .code-tabs { min-width: 0; margin-block: 1.5rem; }

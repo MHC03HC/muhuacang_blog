@@ -23,7 +23,7 @@ test('robots exclusion recognizes individual directives independent of case and 
 
 test('sitemap combines the public pages and collection-specific slugs exactly once', () => {
   const doc = readXml(sitemapXml([post, post], [post, { slug: 'sample', seo: { robots: 'noindex' } }]))
-  assert.deepEqual(values(doc, 'loc'), ['/', '/about', '/blog', '/blog/gti', '/wiki', '/wiki/gti'].map(path => siteOrigin + path))
+  assert.deepEqual(values(doc, 'loc'), ['/', '/about', '/blog', '/blog/gti', '/projects', '/wiki', '/wiki/gti'].map(path => siteOrigin + path))
   assert.deepEqual(values(doc, 'lastmod'), [])
 })
 
@@ -82,4 +82,33 @@ test('unindexed pages omit structured data and JSON-LD safely round-trips script
   assert.ok(!encoded.includes('<'))
   assert.deepEqual(JSON.parse(encoded), schema)
   assert.equal(schema.name, page.title)
+})
+
+test('project Sitemap entries use the canonical route, date and robots policy while RSS remains Blog-only', () => {
+  const project = { ...post, slug: 'technical-blog', updated: '2026-11-26' }
+  const doc = readXml(sitemapXml([post], [], siteOrigin, [
+    project, project, { ...project, slug: 'excluded', seo: { robots: 'noindex' } }
+  ]))
+  assert.deepEqual(values(doc, 'loc').filter(url => url.includes('/projects')), [
+    siteOrigin + '/projects', siteOrigin + '/projects/technical-blog'
+  ])
+  assert.deepEqual(values(doc, 'lastmod'), [project.updated])
+  assert.ok(!rssXml([post]).includes('/projects'))
+})
+
+test('project JSON-LD uses verified cover and modification date without invented publication or author data', () => {
+  const path = '/projects/technical-blog'
+  const url = canonicalUrl(path)
+  const page = { path, title: '公开项目', description: '项目摘要', schema: 'CreativeWork',
+    modified: '2026-11-26', image: '/images/projects/example.webp' }
+  const data = structuredData(page, url)
+  assert.equal(url, siteOrigin + path)
+  assert.equal(data['@type'], 'CreativeWork')
+  assert.equal(data.url, url)
+  assert.equal(data.name, page.title)
+  assert.equal(data.image, siteOrigin + page.image)
+  assert.equal(data.dateModified, page.modified)
+  assert.equal(data.datePublished, undefined)
+  assert.equal(data.author, undefined)
+  assert.equal(structuredData({ ...page, robots: 'noindex, follow' }, url), undefined)
 })

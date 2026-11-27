@@ -29,6 +29,11 @@ export const seoConfig = {
       description: '这里整理我在工程学习、科研项目和技术实践中反复用到的知识点。',
       keywords: ['Wiki', '知识库', '工程学习', '科研项目', '技术实践']
     },
+    projects: {
+      title: '科研与工程项目',
+      description: '记录公开的科研探索、算法学习与工程实践，涵盖项目背景、技术方案和阶段进展。',
+      keywords: ['科研项目', '工程实践', '算法学习']
+    },
     about: {
       title: '关于我',
       description: '了解阿木木当前关注的工程控制、智能算法、科研项目实践以及这座个人技术博客的记录方向。',
@@ -61,7 +66,8 @@ export type PageSeo = {
   keywords?: string[]
   type?: 'website' | 'article' | 'profile'
   robots?: string
-  schema?: 'BlogPosting' | 'TechArticle' | 'WebSite'
+  schema?: 'BlogPosting' | 'TechArticle' | 'WebSite' | 'CollectionPage' | 'CreativeWork'
+  image?: string
   author?: string
   published?: string
   modified?: string
@@ -73,7 +79,9 @@ export function structuredData(page: PageSeo, url: string) {
     '@context': 'https://schema.org', '@type': page.schema,
     url, description: page.description, inLanguage: seoConfig.lang
   }
-  if (page.schema === 'WebSite') return { ...base, name: page.title }
+  if (page.schema === 'CreativeWork') return { ...base, name: page.title,
+    ...(page.modified && { dateModified: page.modified }), ...(page.image && { image: new URL(page.image, url).href }) }
+  if (page.schema === 'WebSite' || page.schema === 'CollectionPage') return { ...base, name: page.title }
   return {
     ...base, headline: page.title, mainEntityOfPage: url,
     author: { '@type': 'Person', name: page.author || seoConfig.author },

@@ -7,7 +7,7 @@ const declaration = '<?xml version="1.0" encoding="UTF-8"?>'
 const entities: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }
 const escapeXml = (value: string) => value.replace(/[&<>"']/g, character => entities[character]!)
 
-function contentUrl(collection: 'blog' | 'wiki', slug: string, origin: string) {
+function contentUrl(collection: 'blog' | 'wiki' | 'projects', slug: string, origin: string) {
   if (!/^[a-zA-Z0-9_-]+$/.test(slug)) throw new Error(`无效的文章 slug：${slug}`)
   return canonicalUrl(`/${collection}/${slug}`, origin)
 }
@@ -20,10 +20,10 @@ function calendarDay(value: string, url: string) {
   return day
 }
 
-export function sitemapXml(posts: Entry[], wiki: Entry[], origin = siteOrigin) {
+export function sitemapXml(posts: Entry[], wiki: Entry[], origin = siteOrigin, projects: Entry[] = []) {
   const urls = new Map<string, string | undefined>()
-  for (const path of ['/', '/blog', '/wiki', '/about']) urls.set(canonicalUrl(path, origin), undefined)
-  for (const [collection, entries] of [['blog', posts], ['wiki', wiki]] as const) {
+  for (const path of ['/', '/blog', '/wiki', '/projects', '/about']) urls.set(canonicalUrl(path, origin), undefined)
+  for (const [collection, entries] of [['blog', posts], ['wiki', wiki], ['projects', projects]] as const) {
     for (const entry of entries) {
       if (!isIndexable(entry.seo?.robots)) continue
       const url = contentUrl(collection, entry.slug, origin)

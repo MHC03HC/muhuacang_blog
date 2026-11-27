@@ -1,9 +1,17 @@
 import { siteOrigin } from './app/utils/seo'
+import { getFeaturedCovers, validateProjectSources } from './scripts/content-sources.mjs'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
-  modules: ['@nuxt/content'],
-  nitro: { prerender: { routes: ['/sitemap.xml', '/rss.xml', '/search-index.json'] } },
+  modules: [
+    async (_options, nuxt) => {
+      const root = nuxt.options.rootDir
+      await validateProjectSources(root)
+      nuxt.options.runtimeConfig.public.featuredCovers = await getFeaturedCovers(root)
+    },
+    '@nuxt/content'
+  ],
+  nitro: { prerender: { routes: ['/projects', '/sitemap.xml', '/rss.xml', '/search-index.json'] } },
   content: {
     renderer: {
       anchorLinks: false
@@ -14,7 +22,7 @@ export default defineNuxtConfig({
         remarkPlugins: { 'remark-math': {} },
         rehypePlugins: { 'rehype-katex': {} },
         highlight: {
-          theme: { default: 'github-light', dark: 'github-dark' },
+          theme: { default: 'github-light-high-contrast', dark: 'github-dark' },
           langs: ['js', 'jsx', 'json', 'ts', 'tsx', 'vue', 'css', 'html', 'bash', 'shell', 'md', 'mdc', 'yaml', 'cpp', 'c', 'python']
         }
       }
@@ -28,7 +36,8 @@ export default defineNuxtConfig({
   ],
   runtimeConfig: {
     public: {
-      siteUrl: siteOrigin
+      siteUrl: siteOrigin,
+      featuredCovers: [] as string[]
     }
   },
   hooks: {

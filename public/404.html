@@ -5,135 +5,130 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, follow">
   <title>页面走丢了 - 阿木木的技术博客</title>
-  <meta name="description" content="你访问的页面不存在，可能是链接错误或文章已移动。">
+  <meta name="description" content="你访问的页面不存在，可能是链接错误或内容已移动。">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <script>
     (function () {
-      try {
-        var stored = localStorage.getItem('amumu-theme');
+      var stored;
+      try { stored = localStorage.getItem('amumu-theme'); } catch (e) {}
+      var media = matchMedia('(prefers-color-scheme: dark)');
+      function apply() {
         document.documentElement.dataset.theme = stored === 'light' || stored === 'dark'
-          ? stored : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      } catch (e) {}
+          ? stored : (media.matches ? 'dark' : 'light');
+      }
+      apply();
+      media.addEventListener('change', apply);
     })();
   </script>
   <style>
     :root {
-      color-scheme: light dark;
-      --bg: #f4f7fb;
-      --panel: rgba(255,255,255,.88);
-      --border: rgba(148,163,184,.22);
-      --text: #16213f;
-      --muted: #5e7094;
-      --primary: #2f6df6;
-      --primary-strong: #2156cc;
-      --primary-contrast: #fff;
+      color-scheme: light;
+      --bg: #f3f1e8;
+      --panel: #faf8f0;
+      --soft: #e7ebe1;
+      --line: #daddd1;
+      --text: #2d3732;
+      --muted: #59655d;
+      --accent: #496b57;
+      --contrast: #fff;
     }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme]) {
-        --bg: #09111f;
-        --panel: rgba(12, 20, 37, .92);
-        --border: rgba(96, 118, 160, .28);
-        --text: #edf3ff;
-        --muted: #a8b5d0;
-        --primary: #7ba2ff;
-        --primary-strong: #a9c1ff;
-        --primary-contrast: #08101d;
+        color-scheme: dark;
+        --bg: #0b1120;
+        --panel: #101828;
+        --soft: #162033;
+        --line: #243247;
+        --text: #e5eefb;
+        --muted: #9fb0c8;
+        --accent: #60a5fa;
+        --contrast: #08101d;
       }
     }
-    :root[data-theme='dark'] {
-        color-scheme: dark;
-        --bg: #09111f;
-        --panel: rgba(12, 20, 37, .92);
-        --border: rgba(96, 118, 160, .28);
-        --text: #edf3ff;
-        --muted: #a8b5d0;
-        --primary: #7ba2ff;
-        --primary-strong: #a9c1ff;
-        --primary-contrast: #08101d;
-      }
-    :root[data-theme='light'] { color-scheme: light; }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0b1120;
+      --panel: #101828;
+      --soft: #162033;
+      --line: #243247;
+      --text: #e5eefb;
+      --muted: #9fb0c8;
+      --accent: #60a5fa;
+      --contrast: #08101d;
+    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      min-height: 100vh;
+      padding: 1rem clamp(1rem, 4vw, 2rem);
+      background: var(--bg);
+      color: var(--text);
+      font: 1rem/1.7 system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .shell { width: min(100%, 75rem); margin-inline: auto; }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding-block: 0 1rem;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    header span {
       display: grid;
       place-items: center;
-      padding: 24px;
-      background:
-        radial-gradient(circle at top right, rgba(83, 126, 255, .16), transparent 28%),
-        radial-gradient(circle at bottom left, rgba(126, 211, 255, .14), transparent 26%),
-        var(--bg);
-      color: var(--text);
-      font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 0.5rem;
+      background: var(--accent);
+      color: var(--contrast);
     }
     .card {
-      width: min(100%, 760px);
-      border-radius: 28px;
-      border: 1px solid var(--border);
+      width: min(100%, 48rem);
+      margin-block: clamp(3rem, 10vw, 8rem);
+      padding: clamp(1.5rem, 5vw, 3rem);
+      border: 1px solid var(--line);
+      border-radius: 0.875rem;
       background: var(--panel);
-      box-shadow: 0 18px 48px rgba(15, 23, 42, .12);
-      padding: clamp(28px, 5vw, 44px);
     }
     .kicker {
-      margin: 0 0 12px;
-      color: var(--primary);
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: .04em;
+      margin: 0 0 0.8rem;
+      color: var(--accent);
+      font: 700 clamp(1.5rem, 3vw, 2rem)/1.2 ui-monospace, monospace;
     }
-    h1 {
-      margin: 0 0 14px;
-      font-size: clamp(32px, 7vw, 56px);
-      line-height: 1.05;
-    }
-    p {
-      margin: 0;
-      color: var(--muted);
-      font-size: clamp(16px, 2.4vw, 20px);
-    }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 28px;
-    }
+    h1 { margin: 0; font-size: clamp(2.125rem, 5vw, 3.375rem); line-height: 1.14; }
+    p { margin: 1rem 0 0; color: var(--muted); }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
     .btn {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      min-height: 48px;
-      padding: 0 18px;
-      border-radius: 999px;
+      min-height: 2.75rem;
+      padding: 0 1rem;
+      border: 1px solid var(--accent);
+      border-radius: 0.5rem;
+      background: var(--soft);
+      color: var(--text);
       text-decoration: none;
       font-weight: 700;
-      transition: transform .18s ease, background-color .18s ease;
     }
-    .btn:hover { transform: translateY(-1px); }
-    .btn-primary {
-      color: var(--primary-contrast);
-      background: var(--primary);
-    }
-    .btn-primary:hover { background: var(--primary-strong); }
-    .btn-secondary {
-      color: var(--text);
-      background: rgba(148, 163, 184, .12);
-      border: 1px solid var(--border);
-    }
-    a:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
-    @media (prefers-reduced-motion: reduce) {
-      * { transition: none !important; }
-    }
+    .btn-primary { background: var(--accent); color: var(--contrast); }
+    .btn:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+    a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   </style>
 </head>
 <body>
-  <main class="card">
-    <p class="kicker">404</p>
-    <h1>页面走丢了</h1>
-    <p>你访问的页面不存在，可能是链接错误或文章已移动。</p>
-    <div class="actions">
-      <a class="btn btn-primary" href="/">返回首页</a>
-      <a class="btn btn-secondary" href="/blog">返回文章列表</a>
-    </div>
-  </main>
+  <div class="shell">
+    <header><span aria-hidden="true">穆</span>阿木木的技术博客</header>
+    <main class="card">
+      <p class="kicker">404</p>
+      <h1>页面走丢了</h1>
+      <p>你访问的页面不存在，可能是链接错误或内容已移动。</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="/">返回首页</a>
+        <a class="btn" href="/blog">返回文章列表</a>
+        <a class="btn" href="/wiki">浏览 Wiki</a>
+      </div>
+    </main>
+  </div>
 </body>
 </html>

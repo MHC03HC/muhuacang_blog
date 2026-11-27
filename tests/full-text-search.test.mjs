@@ -333,3 +333,30 @@ test('HTML-looking input remains literal text parts that reconstruct the origina
   ])
   assert.equal(parts.map(part => part.text).join(''), text)
 })
+
+test('projects match title, description and body with encoded chapter anchors', () => {
+  const project = createDocument({
+    kind: 'project', path: '/projects/orbital-dynamics', title: '轨道估计', description: '状态观测',
+    sections: [createSection('实验方法', 'Using the Kalman filter', '实验方法')]
+  })
+  assert.deepEqual(resultPaths([project], '轨道估计'), [project.path])
+  assert.deepEqual(resultPaths([project], '状态观测'), [project.path])
+  const [result] = searchDocuments([project], 'kalman')
+  assert.equal(result.document.kind, 'project')
+  assert.deepEqual(result.hits.map(hit => [hit.heading, hit.href, hit.snippet]), [
+    ['实验方法', '/projects/orbital-dynamics#%E5%AE%9E%E9%AA%8C%E6%96%B9%E6%B3%95', 'Using the Kalman filter']
+  ])
+})
+
+test('adding a project preserves the relative order, excerpts, highlights and links of Blog and Wiki hits', () => {
+  const chapter = createSection('C++ 实战', '使用 C++ 处理输入 && 输出', 'c-实战')
+  const wiki = createDocument({ path: '/wiki/cpp', title: 'C++', sections: [chapter] })
+  const blog = createDocument({ kind: 'blog', path: '/blog/cpp', title: '入门 C++', sections: [chapter] })
+  const project = createDocument({ kind: 'project', path: '/projects/engine', title: 'C++ &&', sections: [chapter] })
+  for (const query of ['C++', 'C++ &&']) {
+    const display = results => results.map(result => [result, highlightSearchText(result.document.title, query)])
+    const before = display(searchDocuments([blog, wiki], query))
+    const after = display(searchDocuments([project, blog, wiki], query).filter(result => result.document.kind !== 'project'))
+    assert.deepEqual(after, before)
+  }
+})

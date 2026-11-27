@@ -8,7 +8,7 @@ defineProps<{
 </script>
 
 <template>
-  <article class="post-card">
+  <article class="wiki-card">
     <div class="post-card-meta">
       <time :datetime="item.updated">{{ formatChineseDate(item.updated) }}</time>
     </div>

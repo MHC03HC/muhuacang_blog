@@ -1,4 +1,5 @@
 import { defineContentConfig, defineCollection, z } from '@nuxt/content'
+import { projectSchema } from './project-schema'
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式应为 YYYY-MM-DD')
 
@@ -17,6 +18,11 @@ export default defineContentConfig({
         author: z.string().default('阿木木'),
         tags: z.array(z.string()).default([])
       })
+    }),
+    projects: defineCollection({
+      type: 'page',
+      source: 'projects/**/*.md',
+      schema: projectSchema
     }),
     wiki: defineCollection({
       type: 'page',

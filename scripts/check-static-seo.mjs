@@ -6,7 +6,7 @@ import { parse } from 'parse5'
 
 const origin = 'https://www.muhuacang.cn'
 const site = '阿木木的技术博客'
-const staticPages = new Map([['/', site], ['/blog', '博客文章'], ['/wiki', 'Wiki'], ['/about', '关于我']])
+const staticPages = new Map([['/', site], ['/blog', '博客文章'], ['/wiki', 'Wiki'], ['/projects', '科研与工程项目'], ['/about', '关于我']])
 const excluded = robots => /(?:^|[,\s])(?:noindex|none)(?=$|[,\s])/i.test(robots || '')
 
 function only(values, label) {
@@ -56,7 +56,11 @@ function checkHead(html, path, article) {
   if (path === '/search') assert.equal(meta('robots'), 'noindex, follow')
   const indexable = path !== '/search' && !excluded(article?.seo?.robots)
   assert.equal(!excluded(robots[0] && attr(robots[0], 'content')), indexable, path)
-  if (!indexable || (!article && path !== '/')) {
+  if (article?.cover && path.startsWith('/projects/')) {
+    assert.equal(meta('og:image'), origin + article.cover, path)
+    assert.equal(meta('twitter:image'), origin + article.cover, path)
+  }
+  if (!indexable || (!article && path !== '/' && path !== '/projects')) {
     assert.equal(scripts.length, 0, path)
     return
   }
@@ -65,8 +69,15 @@ function checkHead(html, path, article) {
   assert.equal(data.url, url, path)
   assert.equal(data.description, description, path)
   if (!article) {
-    assert.equal(data['@type'], 'WebSite')
+    assert.equal(data['@type'], path === '/projects' ? 'CollectionPage' : 'WebSite')
     assert.equal(data.name, title)
+    return
+  }
+  if (path.startsWith('/projects/')) {
+    assert.equal(data['@type'], 'CreativeWork', path)
+    assert.equal(data.name, title, path)
+    assert.equal(data.dateModified, article.updated, path)
+    assert.equal(data.image, article.cover ? origin + article.cover : undefined, path)
     return
   }
   assert.equal(data['@type'], path.startsWith('/blog/') ? 'BlogPosting' : 'TechArticle', path)
@@ -133,6 +144,6 @@ export async function checkStaticSeo(directory, pages, articles) {
   const robots = await readFile(join(directory, 'robots.txt'), 'utf8')
   assert.match(robots, /^User-agent:\s*\*\s*$/im)
   assert.deepEqual([...robots.matchAll(/^Sitemap:\s*(\S+)/gim)].map(m => m[1]), [origin + '/sitemap.xml'])
-  assert.doesNotMatch(robots, /^Disallow:\s*\/(?:\s*$|(?:blog|wiki|search|about|_nuxt|images|rss\.xml|sitemap\.xml)(?:\/|\s*$))/im)
+  assert.doesNotMatch(robots, /^Disallow:\s*\/(?:\s*$|(?:blog|wiki|projects|search|about|_nuxt|images|rss\.xml|sitemap\.xml)(?:\/|\s*$))/im)
   return `Sitemap ${urls.length} 个 URL，RSS ${items.length} 篇博客，HTML 元数据、JSON-LD 和 robots.txt 均通过。`
 }

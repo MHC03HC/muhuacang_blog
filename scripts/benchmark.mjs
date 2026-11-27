@@ -17,11 +17,14 @@ const routes = ['/', '/blog', '/blog/blog-officially-starts', '/wiki/cpp', '/wik
 let server, browser
 try {
   await cp(input, dir, { recursive: true })
+  const projectRoutes = new Set()
   let deployment = 0
   const scripts = []
   for (const file of await readdir(dir, { recursive: true, withFileTypes: true })) {
     if (!file.isFile()) continue
     const path = join(file.parentPath, file.name)
+    const projectRoute = path.slice(dir.length).match(/^(\/projects(?:\/[^/]+)?)\/index\.html$/)?.[1]
+    if (projectRoute) projectRoutes.add(projectRoute)
     const data = await readFile(path)
     deployment += data.length
     if (/\.js$/.test(path)) scripts.push([file.name, data.length])
@@ -36,7 +39,9 @@ try {
   emit({ node: process.version, os: release(), cpu: cpus()[0].model, browser: browser.version(),
     throttling: 'none', viewportHeight: 900,
     deployment, deployJS: scripts.reduce((n, [, bytes]) => n + bytes, 0), largest: scripts.sort((a,b) => b[1]-a[1]).slice(0,6) })
-  for (const width of [360, 768, 1440]) for (const route of routes) {
+  const projectList = projectRoutes.delete('/projects') ? ['/projects'] : []
+  const projectSample = [...projectRoutes].sort().slice(0, 1)
+  for (const width of [360, 768, 1440]) for (const route of [...routes, ...projectList, ...projectSample]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce', colorScheme: 'light' })
     const page = await context.newPage()
     const cdp = await context.newCDPSession(page)
@@ -100,9 +105,19 @@ try {
             const extra = await page.evaluate(t => performance.getEntriesByType('resource').filter(e => e.startTime >= t && /\.js$/.test(e.name))
               .map(e => [new URL(e.name).pathname, e.transferSize, e.decodedBodySize]), before)
             const themes = []
-            for (let i = 0; i < 2; i++) {
+            for (const preference of ['dark', 'light']) {
               const old = await img.getAttribute('src')
-              const start = await page.evaluate(() => { const t = performance.now(); document.querySelector('button[aria-label*="模式"]').click(); return t })
+              const start = await page.evaluate(preference => {
+                const time = performance.now()
+                const theme = document.querySelector('select[aria-label="外观主题"]')
+                if (theme) {
+                  theme.value = preference
+                  theme.dispatchEvent(new Event('change', { bubbles: true }))
+                } else {
+                  document.querySelector('button[aria-label*="模式"]').click()
+                }
+                return time
+              }, preference)
               await page.waitForFunction(old => document.querySelector('.article-diagram img')?.src !== old, old)
               themes.push(await img.evaluate(async (el, start) => { await el.decode(); return performance.now() - start }, start))
             }

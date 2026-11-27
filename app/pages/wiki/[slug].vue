@@ -67,7 +67,6 @@ const relatedEntries = computed(() => {
     <section v-if="relatedEntries.length" class="home-section">
       <div class="section-head">
         <div>
-          <p class="section-kicker">相关条目</p>
           <h2>相关条目</h2>
         </div>
       </div>

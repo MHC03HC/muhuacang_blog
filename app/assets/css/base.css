@@ -15,7 +15,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: "Inter Variable", "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  line-height: 1.65;
+  font-size: var(--font-body);
+  line-height: 1.7;
   overflow-wrap: anywhere;
 }
 
@@ -24,8 +25,8 @@ a {
 }
 
 /* Keep keyboard navigation visible across links and controls. */
-:where(a, button):focus-visible {
-  outline: 2px solid var(--accent);
+:where(a, button, input, select):focus-visible {
+  outline: var(--focus-outline);
   outline-offset: 3px;
 }
 

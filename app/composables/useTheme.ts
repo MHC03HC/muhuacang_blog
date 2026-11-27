@@ -1,93 +1,36 @@
-type ThemePreference = 'light' | 'dark' | 'system'
-type ResolvedTheme = 'light' | 'dark'
-
-const THEME_STORAGE_KEY = 'amumu-theme'
-
-const resolveSystemTheme = (): ResolvedTheme => {
-  if (!import.meta.client) return 'light'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
+import { normalizeThemePreference, resolveTheme, THEME_MEDIA_QUERY, THEME_STORAGE_KEY, type ResolvedTheme, type ThemePreference } from '~/utils/theme'
 
 export const useResolvedTheme = () => useState<ResolvedTheme>('theme-resolved', () => 'light')
 
 export const useTheme = () => {
   const preference = useState<ThemePreference>('theme-preference', () => 'system')
   const resolvedTheme = useResolvedTheme()
+  let media: MediaQueryList | undefined
 
-  let cleanup: (() => void) | null = null
-
-  const applyTheme = (theme: ResolvedTheme) => {
-    if (!import.meta.client) return
+  const syncTheme = () => {
+    if (!media) return
+    const theme = resolveTheme(preference.value, media.matches)
+    resolvedTheme.value = theme
     document.documentElement.dataset.theme = theme
     document.documentElement.style.colorScheme = theme
   }
 
-  const syncTheme = () => {
-    const nextTheme = preference.value === 'system' ? resolveSystemTheme() : preference.value
-    resolvedTheme.value = nextTheme
-    applyTheme(nextTheme)
-  }
-
-  const setupSystemListener = () => {
-    if (!import.meta.client || cleanup) return
-
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = () => {
-      if (preference.value === 'system') {
-        syncTheme()
-      }
-    }
-
-    media.addEventListener('change', handler)
-    cleanup = () => media.removeEventListener('change', handler)
-  }
-
   onMounted(() => {
-    if (!import.meta.client) return
-
+    media = window.matchMedia(THEME_MEDIA_QUERY)
     let stored: string | null = null
     try { stored = localStorage.getItem(THEME_STORAGE_KEY) } catch { /* Storage can be disabled. */ }
-    if (stored === 'light' || stored === 'dark') {
-      preference.value = stored
-    } else {
-      preference.value = 'system'
-    }
-
+    preference.value = normalizeThemePreference(stored)
     syncTheme()
-    setupSystemListener()
+    media.addEventListener('change', syncTheme)
   })
 
-  onBeforeUnmount(() => {
-    cleanup?.()
-    cleanup = null
-  })
+  onBeforeUnmount(() => media?.removeEventListener('change', syncTheme))
 
-  watch(
-    preference,
-    (value) => {
-      if (!import.meta.client) return
-
-      try {
-        if (value === 'system') localStorage.removeItem(THEME_STORAGE_KEY)
-        else localStorage.setItem(THEME_STORAGE_KEY, value)
-      } catch { /* Theme switching still works without persistence. */ }
-
-      syncTheme()
-    }
-  )
-
-  const toggleTheme = () => {
-    preference.value = resolvedTheme.value === 'dark' ? 'light' : 'dark'
+  const setPreference = (value: ThemePreference) => {
+    preference.value = value
+    try { localStorage.setItem(THEME_STORAGE_KEY, value) } catch { /* Theme switching still works without storage. */ }
+    syncTheme()
   }
 
-  const themeIcon = computed(() => (resolvedTheme.value === 'dark' ? '☀️' : '🌙'))
-  const themeLabel = computed(() => (resolvedTheme.value === 'dark' ? '切换到浅色模式' : '切换到深色模式'))
-
-  return {
-    preference,
-    resolvedTheme,
-    toggleTheme,
-    themeIcon,
-    themeLabel
-  }
+  return { preference, setPreference }
 }

@@ -1,4 +1,5 @@
 import { seoConfig } from '~/utils/seo'
+import { projectSummary, sortProjects, type ProjectSummary } from '~/utils/projects'
 
 export type PostSummary = {
   title: string
@@ -60,5 +61,15 @@ export const useWikiSummaries = () => {
         updated: entry.updated
       }))
       .sort((a, b) => timestamp(b.updated) - timestamp(a.updated))
+  })
+}
+
+export const useProjectSummaries = () => {
+  return useAsyncData('project-summaries', async (): Promise<ProjectSummary[]> => {
+    const projects = await queryCollection('projects')
+      .select('title', 'slug', 'description', 'status', 'featured', 'order', 'updated', 'technologies', 'github', 'cover')
+      .all()
+
+    return sortProjects(projects.map(projectSummary))
   })
 }

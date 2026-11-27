@@ -1,5 +1,6 @@
 import { queryCollectionSearchSections } from '@nuxt/content/server'
 import type { Section } from '@nuxt/content/server'
+import { projectPath } from '../../app/utils/projects'
 import type { SearchDocument } from '../../app/utils/fullTextSearch'
 
 type IndexSection = Section & { slug: string, description: string }
@@ -10,7 +11,7 @@ function documents<T extends IndexSection>(sections: T[], kind: SearchDocument['
     const hash = section.id.indexOf('#')
     const path = hash < 0 ? section.id : section.id.slice(0, hash)
     if (hash < 0) {
-      result.set(path, { kind, path: `/${kind}/${section.slug}`, title: section.title,
+      result.set(path, { kind, path: kind === 'project' ? projectPath(section.slug) : `/${kind}/${section.slug}`, title: section.title,
         description: section.description, date: date(section), sections: [] })
     }
     result.get(path)!.sections.push({
@@ -22,10 +23,12 @@ function documents<T extends IndexSection>(sections: T[], kind: SearchDocument['
 
 export default defineEventHandler(async event => {
   const options = { ignoredTags: ['style', 'script'], minHeading: 'h1' as const, maxHeading: 'h6' as const }
-  const [posts, wiki] = await Promise.all([
+  const [posts, wiki, projects] = await Promise.all([
     queryCollectionSearchSections(event, 'posts', { ...options, extraFields: ['slug', 'description', 'date'] }),
-    queryCollectionSearchSections(event, 'wiki', { ...options, extraFields: ['slug', 'description', 'updated'] })
+    queryCollectionSearchSections(event, 'wiki', { ...options, extraFields: ['slug', 'description', 'updated'] }),
+    queryCollectionSearchSections(event, 'projects', { ...options, extraFields: ['slug', 'description', 'updated', 'startDate'] })
   ])
   setResponseHeader(event, 'Content-Type', 'application/json; charset=utf-8')
-  return JSON.stringify([...documents(posts, 'blog', s => s.date), ...documents(wiki, 'wiki', s => s.updated)])
+  return JSON.stringify([...documents(posts, 'blog', s => s.date), ...documents(wiki, 'wiki', s => s.updated),
+    ...documents(projects, 'project', s => s.updated || s.startDate || '')])
 })
